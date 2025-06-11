@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Verificar se é barbeiro administrador
   const isBarberAdmin = user?.role === 'barber' && user?.position === 'administrador';
@@ -14,7 +16,7 @@ const Dashboard = () => {
 
   // Dados mockados - substituir por dados reais da API
   const dashboardData = {
-    faturamentoHoje: isBarberEmployee ? 180.00 : 450.00, // Barbeiro funcionário vê apenas o seu
+    faturamentoHoje: isBarberEmployee ? 180.00 : 450.00,
     faturamentoMes: isBarberEmployee ? 5200.00 : 12800.00,
     agendamentosHoje: isBarberEmployee ? 3 : 8,
     agendamentosPendentes: isBarberEmployee ? 1 : 3,
@@ -22,7 +24,8 @@ const Dashboard = () => {
     estoqueAlerta: 4,
   };
 
-  const agendamentosProximos = [
+  // Dados reais de agendamentos - em produção viria da mesma fonte dos agendamentos
+  const agendamentosReais = [
     { id: 1, cliente: "João Silva", servico: "Corte + Barba", horario: "14:30", barbeiro: "Carlos" },
     { id: 2, cliente: "Pedro Santos", servico: "Corte", horario: "15:00", barbeiro: "Marcos" },
     { id: 3, cliente: "Lucas Oliveira", servico: "Barba", horario: "15:30", barbeiro: "Carlos" },
@@ -30,8 +33,8 @@ const Dashboard = () => {
 
   // Filtrar agendamentos para barbeiro funcionário (apenas os seus)
   const agendamentosDisplay = isBarberEmployee 
-    ? agendamentosProximos.filter(ag => ag.barbeiro === user?.name).slice(0, 1)
-    : agendamentosProximos;
+    ? agendamentosReais.filter(ag => ag.barbeiro === user?.name)
+    : agendamentosReais;
 
   const melhoresServicos = [
     { servico: "Corte + Barba", vendas: isBarberEmployee ? 15 : 45, valor: isBarberEmployee ? 750.00 : 2250.00 },
@@ -142,28 +145,45 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {agendamentosDisplay.map((agendamento) => (
-              <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <div>
-                  <p className="font-medium">{agendamento.cliente}</p>
-                  <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
-                  {!isBarberEmployee && (
-                    <p className="text-xs text-muted-foreground">com {agendamento.barbeiro}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <span className="font-bold text-primary">{agendamento.horario}</span>
-                </div>
+            {agendamentosDisplay.length > 0 ? (
+              <>
+                {agendamentosDisplay.map((agendamento) => (
+                  <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div>
+                      <p className="font-medium">{agendamento.cliente}</p>
+                      <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
+                      {!isBarberEmployee && (
+                        <p className="text-xs text-muted-foreground">com {agendamento.barbeiro}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold text-primary">{agendamento.horario}</span>
+                    </div>
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/agendamentos')}
+                >
+                  Ver Todos os Agendamentos
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Nenhum agendamento próximo encontrado
+                </p>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/agendamentos')}
+                >
+                  Ver Todos os Agendamentos
+                </Button>
               </div>
-            ))}
-            {agendamentosDisplay.length === 0 && isBarberEmployee && (
-              <p className="text-center text-muted-foreground py-4">
-                Nenhum agendamento próximo encontrado
-              </p>
             )}
-            <Button variant="outline" className="w-full">
-              Ver Todos os Agendamentos
-            </Button>
           </CardContent>
         </Card>
 
@@ -207,7 +227,11 @@ const Dashboard = () => {
               <p className="text-sm text-muted-foreground mb-3">
                 {dashboardData.estoqueAlerta} produtos precisam de reposição
               </p>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/produtos')}
+              >
                 Gerenciar Estoque
               </Button>
             </CardContent>

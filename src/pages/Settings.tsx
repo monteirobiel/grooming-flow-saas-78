@@ -1,14 +1,15 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Settings as SettingsIcon, Users, Bell, Download, Shield, Edit, Trash, UserPlus, Crown, User } from "lucide-react";
+import { Settings as SettingsIcon, Users, Bell, Download, Shield, Edit, Trash, UserPlus, Crown, User, DollarSign, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
+import { ServicePriceForm } from "@/components/forms/ServicePriceForm";
+import { BarberDataViewer } from "@/components/BarberDataViewer";
 import { toast } from "@/components/ui/use-toast";
 
 const Settings = () => {
@@ -20,6 +21,8 @@ const Settings = () => {
   });
   
   const [showBarberForm, setShowBarberForm] = useState(false);
+  const [showServicePriceForm, setShowServicePriceForm] = useState(false);
+  const [showBarberDataViewer, setShowBarberDataViewer] = useState(false);
   const [editingBarber, setEditingBarber] = useState<any>(null);
   
   const [barbeiros, setBarbeiros] = useState([
@@ -224,6 +227,30 @@ const Settings = () => {
         </Card>
       </div>
 
+      {/* Gestão de Preços de Serviços */}
+      <Card className="card-elegant">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-primary" />
+              Preços dos Serviços
+            </div>
+            <Button 
+              className="btn-primary"
+              onClick={() => setShowServicePriceForm(true)}
+            >
+              Gerenciar Preços
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Configure os preços dos serviços oferecidos pela barbearia. 
+            Os valores serão aplicados automaticamente nos agendamentos.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Seção exclusiva para donos */}
       {user?.role === 'owner' && (
         <>
@@ -320,6 +347,32 @@ const Settings = () => {
                     </Button>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Gestão Premium */}
+          <Card className="card-elegant border-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Crown className="h-5 w-5" />
+                Gestão Premium
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-primary/10 rounded-lg">
+                <h4 className="font-medium mb-2">Visualizar Dados dos Barbeiros</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Como administrador, você pode visualizar os agendamentos e faturamento 
+                  individual de cada barbeiro funcionário.
+                </p>
+                <Button 
+                  className="btn-primary"
+                  onClick={() => setShowBarberDataViewer(true)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Visualizar Dados dos Barbeiros
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -474,12 +527,23 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Modal */}
+      {/* Modals */}
       <BarberForm
         open={showBarberForm}
         onOpenChange={setShowBarberForm}
         barber={editingBarber}
         onSave={handleSaveBarber}
+      />
+
+      <ServicePriceForm
+        open={showServicePriceForm}
+        onOpenChange={setShowServicePriceForm}
+      />
+
+      <BarberDataViewer
+        open={showBarberDataViewer}
+        onOpenChange={setShowBarberDataViewer}
+        barbeiros={barbeiros}
       />
     </div>
   );

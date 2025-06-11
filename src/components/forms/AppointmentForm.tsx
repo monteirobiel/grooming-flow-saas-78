@@ -5,7 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
+import { useServices } from "@/hooks/useServices";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface AppointmentFormProps {
   open: boolean;
@@ -15,6 +22,9 @@ interface AppointmentFormProps {
 }
 
 export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: AppointmentFormProps) => {
+  const { getServicePrice, getServiceNames } = useServices();
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  
   const [formData, setFormData] = useState({
     cliente: appointment?.cliente || "",
     telefone: appointment?.telefone || "",
@@ -25,13 +35,70 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
     valor: appointment?.valor || 0
   });
 
-  const servicos = ["Corte", "Barba", "Corte + Barba", "Sobrancelha", "Lavagem"];
+  const servicos = getServiceNames();
   const barbeiros = ["Carlos", "Marcos", "João"];
-  const horarios = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-    "11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
-    "16:00", "16:30", "17:00", "17:30"
-  ];
+  
+  // Horários baseados na configuração da barbearia
+  const getAvailableHorarios = () => {
+    if (!selectedDate) return [];
+    
+    const dayOfWeek = selectedDate.getDay();
+    
+    // Domingo (0) - fechado
+    if (dayOfWeek === 0) return [];
+    
+    // Sábado (6) - até 16:00
+    if (dayOfWeek === 6) {
+      return [
+        "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+        "11:00", "11:30", "14:00", "14:30", "15:00", "15:30"
+      ];
+    }
+    
+    // Segunda a sexta - até 18:00
+    return [
+      "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+      "11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
+      "16:00", "16:30", "17:00", "17:30"
+    ];
+  };
+
+  const horarios = getAvailableHorarios();
+
+  // Atualizar preço quando serviço for selecionado
+  const handleServiceChange = (servico: string) => {
+    const preco = getServicePrice(servico);
+    setFormData(prev => ({ 
+      ...prev, 
+      servico, 
+      valor: preco 
+    }));
+  };
+
+  // Verificar se a data é válida para agendamento
+  const isDateDisabled = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Não permitir datas passadas
+    if (date < today) return true;
+    
+    // Não permitir domingos (dia 0)
+    if (date.getDay() === 0) return true;
+    
+    return false;
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setSelectedDate(date);
+      setFormData(prev => ({ 
+        ...prev, 
+        data: format(date, 'yyyy-MM-dd'),
+        horario: "" // Reset horário quando data muda
+      }));
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +163,7 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
             <Label htmlFor="servico">Serviço *</Label>
             <Select 
               value={formData.servico} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, servico: value }))}
+              onValueChange={handleServiceChange}
             >
               <SelectTrigger className="input-elegant">
                 <SelectValue placeholder="Selecione o serviço" />
@@ -128,14 +195,31 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="data">Data *</Label>
-              <Input
-                id="data"
-                type="date"
-                value={formData.data}
-                onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                className="input-elegant"
-              />
+              <Label>Data *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal input-elegant",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP", { locale: ptBR }) : "Selecionar data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={isDateDisabled}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             
             <div>
@@ -143,9 +227,10 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
               <Select 
                 value={formData.horario} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, horario: value }))}
+                disabled={!selectedDate}
               >
                 <SelectTrigger className="input-elegant">
-                  <SelectValue placeholder="Horário" />
+                  <SelectValue placeholder={selectedDate ? "Horário" : "Selecione a data"} />
                 </SelectTrigger>
                 <SelectContent>
                   {horarios.map(horario => (
@@ -163,10 +248,13 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
               type="number"
               step="0.01"
               value={formData.valor}
-              onChange={(e) => setFormData(prev => ({ ...prev, valor: parseFloat(e.target.value) || 0 }))}
-              className="input-elegant"
-              placeholder="0.00"
+              readOnly
+              className="input-elegant bg-muted cursor-not-allowed"
+              placeholder="Será preenchido automaticamente"
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              O valor é definido automaticamente baseado no serviço selecionado
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">
