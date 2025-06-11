@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppointments } from "@/hooks/useAppointments";
 
 const Dashboard = () => {
@@ -13,6 +13,11 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { appointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
+
+  // Log sempre que appointments mudar no Dashboard
+  useEffect(() => {
+    console.log('🏠 Dashboard - appointments atualizados:', appointments);
+  }, [appointments]);
 
   // Verificar se é barbeiro administrador
   const isBarberAdmin = user?.role === 'barber' && user?.position === 'administrador';
@@ -23,6 +28,8 @@ const Dashboard = () => {
     ? appointments.filter(ag => ag.barbeiro === user?.name)
     : appointments;
 
+  console.log('🔍 Dashboard - agendamentos filtrados:', filteredAgendamentos);
+
   // Calcular métricas baseadas nos agendamentos reais
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
@@ -32,6 +39,9 @@ const Dashboard = () => {
     return appointmentDate.getMonth() === currentDate.getMonth() && 
            appointmentDate.getFullYear() === currentDate.getFullYear();
   });
+
+  console.log('📅 Dashboard - agendamentos de hoje:', todayAppointments);
+  console.log('📅 Dashboard - agendamentos do mês:', monthlyAppointments);
 
   const dashboardData = {
     faturamentoHoje: todayAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
@@ -56,6 +66,9 @@ const Dashboard = () => {
 
   // Próximos agendamentos (apenas hoje)
   const proximosAgendamentosHoje = proximosAgendamentos.filter(ag => ag.data === "Hoje");
+
+  console.log('⏰ Dashboard - próximos agendamentos:', proximosAgendamentos);
+  console.log('⏰ Dashboard - agendamentos de hoje:', proximosAgendamentosHoje);
 
   // Serviços mais vendidos baseados nos dados reais
   const serviceCounts = monthlyAppointments.reduce((acc: any, ag) => {
@@ -416,3 +429,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+</edits_to_apply>

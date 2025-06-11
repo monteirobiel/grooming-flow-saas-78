@@ -115,7 +115,11 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('📝 Iniciando submit do formulário');
+    console.log('📋 Dados do formulário:', formData);
+    
     if (!formData.cliente || !formData.telefone || !formData.servico || !formData.barbeiro || !formData.horario) {
+      console.log('❌ Validação falhou - campos obrigatórios em falta');
       toast({
         title: "Erro",
         description: "Preencha todos os campos obrigatórios",
@@ -130,14 +134,19 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
       status: appointment?.status || "pendente"
     };
 
+    console.log('🆕 Novo agendamento criado:', newAppointment);
+
     // Usar o hook para gerenciar os agendamentos
     if (appointment) {
+      console.log('✏️ Atualizando agendamento existente');
       updateAppointment(newAppointment);
     } else {
+      console.log('➕ Adicionando novo agendamento');
       addAppointment(newAppointment);
     }
 
     // Chamar callback para compatibilidade
+    console.log('📞 Chamando callback onSave');
     onSave(newAppointment);
     onOpenChange(false);
     
@@ -153,6 +162,7 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
     });
     setSelectedDate(undefined);
     
+    console.log('✅ Agendamento salvo com sucesso');
     toast({
       title: "Sucesso!",
       description: appointment ? "Agendamento atualizado!" : "Agendamento criado!"

@@ -18,21 +18,26 @@ export const useAppointments = () => {
 
   // Carregar agendamentos do localStorage
   const loadAppointments = () => {
+    console.log('🔍 Carregando agendamentos do localStorage...');
     const stored = localStorage.getItem('appointments');
     if (stored) {
       const parsedAppointments = JSON.parse(stored);
+      console.log('📋 Agendamentos carregados:', parsedAppointments);
       setAppointments(parsedAppointments);
       return parsedAppointments;
     }
+    console.log('📋 Nenhum agendamento encontrado no localStorage');
     return [];
   };
 
   // Salvar agendamentos no localStorage
   const saveAppointments = (newAppointments: Appointment[]) => {
+    console.log('💾 Salvando agendamentos:', newAppointments);
     localStorage.setItem('appointments', JSON.stringify(newAppointments));
     setAppointments(newAppointments);
     
     // Disparar evento customizado para notificar outros componentes
+    console.log('📡 Disparando evento appointmentsUpdated');
     window.dispatchEvent(new CustomEvent('appointmentsUpdated', { 
       detail: newAppointments 
     }));
@@ -40,12 +45,15 @@ export const useAppointments = () => {
 
   // Adicionar novo agendamento
   const addAppointment = (appointment: Appointment) => {
+    console.log('➕ Adicionando novo agendamento:', appointment);
     const updatedAppointments = [...appointments, appointment];
+    console.log('📝 Lista atualizada de agendamentos:', updatedAppointments);
     saveAppointments(updatedAppointments);
   };
 
   // Atualizar agendamento existente
   const updateAppointment = (updatedAppointment: Appointment) => {
+    console.log('✏️ Atualizando agendamento:', updatedAppointment);
     const updatedAppointments = appointments.map(apt => 
       apt.id === updatedAppointment.id ? updatedAppointment : apt
     );
@@ -54,6 +62,7 @@ export const useAppointments = () => {
 
   // Atualizar status do agendamento
   const updateAppointmentStatus = (id: number, status: string) => {
+    console.log('🔄 Atualizando status do agendamento:', id, 'para:', status);
     const updatedAppointments = appointments.map(apt => 
       apt.id === id ? { ...apt, status } : apt
     );
@@ -62,21 +71,30 @@ export const useAppointments = () => {
 
   // Carregar dados na inicialização
   useEffect(() => {
+    console.log('🚀 Inicializando useAppointments');
     loadAppointments();
   }, []);
 
   // Escutar mudanças de outros componentes
   useEffect(() => {
+    console.log('👂 Configurando listener para appointmentsUpdated');
     const handleAppointmentsUpdate = (event: CustomEvent) => {
+      console.log('📨 Recebido evento appointmentsUpdated:', event.detail);
       setAppointments(event.detail);
     };
 
     window.addEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
     
     return () => {
+      console.log('🧹 Removendo listener appointmentsUpdated');
       window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
     };
   }, []);
+
+  // Log sempre que appointments mudar
+  useEffect(() => {
+    console.log('📊 Estado atual de appointments:', appointments);
+  }, [appointments]);
 
   return {
     appointments,
