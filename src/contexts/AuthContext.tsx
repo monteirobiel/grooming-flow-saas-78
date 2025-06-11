@@ -6,6 +6,7 @@ interface User {
   name: string;
   email: string;
   role: 'owner' | 'barber';
+  position?: 'administrador' | 'funcionario'; // Nova propriedade para barbeiros
   barbershopId: string;
 }
 
@@ -55,6 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       name: 'João Silva',
       email: email,
       role: email.includes('dono') ? 'owner' : 'barber',
+      position: email.includes('dono') ? undefined : 'administrador', // Barbeiro admin por padrão para demo
       barbershopId: 'barbearia-1'
     };
 

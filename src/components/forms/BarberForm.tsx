@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
 
@@ -18,7 +19,8 @@ export const BarberForm = ({ open, onOpenChange, barber, onSave }: BarberFormPro
     name: barber?.name || "",
     email: barber?.email || "",
     phone: barber?.phone || "",
-    specialty: barber?.specialty || ""
+    specialty: barber?.specialty || "",
+    position: barber?.position || "funcionario"
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -102,6 +104,25 @@ export const BarberForm = ({ open, onOpenChange, barber, onSave }: BarberFormPro
               className="input-elegant"
               placeholder="Ex: Cortes modernos, Barbas"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="position">Cargo/Função</Label>
+            <Select value={formData.position} onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+              <SelectTrigger className="input-elegant">
+                <SelectValue placeholder="Selecione o cargo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="funcionario">Barbeiro Funcionário</SelectItem>
+                <SelectItem value="administrador">Barbeiro Administrador</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {formData.position === 'administrador' 
+                ? 'Acesso completo a relatórios e dados de toda a barbearia'
+                : 'Acesso apenas aos próprios dados e relatórios'
+              }
+            </p>
           </div>
 
           <div className="flex gap-3 pt-4">

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Users, Bell, Download, Shield, Edit, Trash, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Settings as SettingsIcon, Users, Bell, Download, Shield, Edit, Trash, UserPlus, Crown, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
@@ -27,6 +28,7 @@ const Settings = () => {
       email: "carlos@barbearia.com",
       phone: "(11) 99999-9999",
       specialty: "Cortes clássicos",
+      position: "administrador",
       status: "active"
     },
     {
@@ -35,6 +37,7 @@ const Settings = () => {
       email: "marcos@barbearia.com",
       phone: "(11) 88888-8888",
       specialty: "Barbas e bigodes",
+      position: "funcionario",
       status: "active"
     }
   ]);
@@ -247,8 +250,26 @@ const Settings = () => {
               <div className="space-y-4">
                 {barbeiros.map((barbeiro) => (
                   <div key={barbeiro.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{barbeiro.name}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="font-medium">{barbeiro.name}</p>
+                        <Badge 
+                          variant={barbeiro.position === 'administrador' ? 'default' : 'secondary'}
+                          className={barbeiro.position === 'administrador' ? 'badge-premium' : ''}
+                        >
+                          {barbeiro.position === 'administrador' ? (
+                            <div className="flex items-center gap-1">
+                              <Crown className="w-3 h-3" />
+                              Administrador
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              <User className="w-3 h-3" />
+                              Funcionário
+                            </div>
+                          )}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground">{barbeiro.email}</p>
                       <p className="text-sm text-muted-foreground">{barbeiro.phone}</p>
                       {barbeiro.specialty && (
@@ -464,3 +485,5 @@ const Settings = () => {
 };
 
 export default Settings;
+
+}

@@ -1,18 +1,23 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock } from "lucide-react";
+import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const { user } = useAuth();
 
+  // Verificar se é barbeiro administrador
+  const isBarberAdmin = user?.role === 'barber' && user?.position === 'administrador';
+  const isBarberEmployee = user?.role === 'barber' && user?.position === 'funcionario';
+
   // Dados mockados - substituir por dados reais da API
   const dashboardData = {
-    faturamentoHoje: 450.00,
-    faturamentoMes: 12800.00,
-    agendamentosHoje: 8,
-    agendamentosPendentes: 3,
+    faturamentoHoje: isBarberEmployee ? 180.00 : 450.00, // Barbeiro funcionário vê apenas o seu
+    faturamentoMes: isBarberEmployee ? 5200.00 : 12800.00,
+    agendamentosHoje: isBarberEmployee ? 3 : 8,
+    agendamentosPendentes: isBarberEmployee ? 1 : 3,
     produtosVendidos: 15,
     estoqueAlerta: 4,
   };
@@ -23,19 +28,65 @@ const Dashboard = () => {
     { id: 3, cliente: "Lucas Oliveira", servico: "Barba", horario: "15:30", barbeiro: "Carlos" },
   ];
 
+  // Filtrar agendamentos para barbeiro funcionário (apenas os seus)
+  const agendamentosDisplay = isBarberEmployee 
+    ? agendamentosProximos.filter(ag => ag.barbeiro === user?.name).slice(0, 1)
+    : agendamentosProximos;
+
   const melhoresServicos = [
-    { servico: "Corte + Barba", vendas: 45, valor: 2250.00 },
-    { servico: "Corte Tradicional", vendas: 38, valor: 1140.00 },
-    { servico: "Barba", vendas: 22, valor: 660.00 },
+    { servico: "Corte + Barba", vendas: isBarberEmployee ? 15 : 45, valor: isBarberEmployee ? 750.00 : 2250.00 },
+    { servico: "Corte Tradicional", vendas: isBarberEmployee ? 12 : 38, valor: isBarberEmployee ? 360.00 : 1140.00 },
+    { servico: "Barba", vendas: isBarberEmployee ? 8 : 22, valor: isBarberEmployee ? 240.00 : 660.00 },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Indicador de Permissões */}
+      {user?.role === 'barber' && (
+        <Card className="card-modern border-primary">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {user.position === 'administrador' ? (
+                  <>
+                    <Crown className="w-6 h-6 text-primary" />
+                    <div>
+                      <p className="font-semibold text-primary">Barbeiro Administrador</p>
+                      <p className="text-sm text-muted-foreground">
+                        Acesso completo aos dados da barbearia
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <User className="w-6 h-6 text-muted-foreground" />
+                    <div>
+                      <p className="font-semibold">Barbeiro Funcionário</p>
+                      <p className="text-sm text-muted-foreground">
+                        Visualizando apenas seus dados pessoais
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <Badge 
+                variant={user.position === 'administrador' ? 'default' : 'secondary'}
+                className={user.position === 'administrador' ? 'badge-premium' : ''}
+              >
+                {user.position === 'administrador' ? 'Admin' : 'Funcionário'}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Métricas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {isBarberEmployee ? 'Meu Faturamento Hoje' : 'Faturamento Hoje'}
+            </CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -50,7 +101,9 @@ const Dashboard = () => {
 
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Agendamentos Hoje</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {isBarberEmployee ? 'Meus Agendamentos Hoje' : 'Agendamentos Hoje'}
+            </CardTitle>
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -63,7 +116,9 @@ const Dashboard = () => {
 
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Mensal</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {isBarberEmployee ? 'Meu Faturamento Mensal' : 'Faturamento Mensal'}
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -83,22 +138,29 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
-              Próximos Agendamentos
+              {isBarberEmployee ? 'Meus Próximos Agendamentos' : 'Próximos Agendamentos'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {agendamentosProximos.map((agendamento) => (
+            {agendamentosDisplay.map((agendamento) => (
               <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div>
                   <p className="font-medium">{agendamento.cliente}</p>
                   <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
-                  <p className="text-xs text-muted-foreground">com {agendamento.barbeiro}</p>
+                  {!isBarberEmployee && (
+                    <p className="text-xs text-muted-foreground">com {agendamento.barbeiro}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="font-bold text-primary">{agendamento.horario}</span>
                 </div>
               </div>
             ))}
+            {agendamentosDisplay.length === 0 && isBarberEmployee && (
+              <p className="text-center text-muted-foreground py-4">
+                Nenhum agendamento próximo encontrado
+              </p>
+            )}
             <Button variant="outline" className="w-full">
               Ver Todos os Agendamentos
             </Button>
@@ -110,7 +172,7 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              Serviços Mais Vendidos
+              {isBarberEmployee ? 'Meus Serviços Mais Vendidos' : 'Serviços Mais Vendidos'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -131,8 +193,8 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Alertas e Notificações */}
-      {user?.role === 'owner' && (
+      {/* Alertas e Notificações - Apenas para donos e barbeiros administradores */}
+      {(user?.role === 'owner' || isBarberAdmin) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card className="card-modern border-warning">
             <CardHeader>
@@ -160,7 +222,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-3">
-                Seu relatório semanal está pronto para visualização
+                {user?.role === 'owner' ? 'Seu' : 'O'} relatório semanal está pronto para visualização
               </p>
               <Button variant="outline" size="sm">
                 Ver Relatório
