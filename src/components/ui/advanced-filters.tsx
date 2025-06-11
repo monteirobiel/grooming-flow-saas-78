@@ -17,7 +17,9 @@ interface FilterProps {
 
 export const AdvancedFilters = ({ open, onOpenChange, filters, onFiltersChange, onClearFilters }: FilterProps) => {
   const handleFilterChange = (key: string, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+    // Convert "all" back to empty string for filtering logic
+    const filterValue = value === "all" ? "" : value;
+    onFiltersChange({ ...filters, [key]: filterValue });
   };
 
   const removeFilter = (key: string) => {
@@ -45,14 +47,14 @@ export const AdvancedFilters = ({ open, onOpenChange, filters, onFiltersChange, 
           <div>
             <Label>Status</Label>
             <Select 
-              value={filters.status || ""} 
+              value={filters.status || "all"} 
               onValueChange={(value) => handleFilterChange('status', value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pendente">Pendente</SelectItem>
                 <SelectItem value="confirmado">Confirmado</SelectItem>
                 <SelectItem value="concluido">Concluído</SelectItem>
@@ -65,14 +67,14 @@ export const AdvancedFilters = ({ open, onOpenChange, filters, onFiltersChange, 
           <div>
             <Label>Barbeiro</Label>
             <Select 
-              value={filters.barbeiro || ""} 
+              value={filters.barbeiro || "all"} 
               onValueChange={(value) => handleFilterChange('barbeiro', value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Todos os barbeiros" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="Carlos">Carlos</SelectItem>
                 <SelectItem value="Marcos">Marcos</SelectItem>
                 <SelectItem value="João">João</SelectItem>

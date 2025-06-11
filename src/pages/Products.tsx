@@ -110,7 +110,7 @@ const Products = () => {
                          produto.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          produto.fornecedor.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = !categoryFilter || produto.categoria === categoryFilter;
+    const matchesCategory = !categoryFilter || categoryFilter === "all" || produto.categoria === categoryFilter;
     
     let matchesStock = true;
     if (stockFilter === 'baixo') {
@@ -209,24 +209,24 @@ const Products = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <Select value={categoryFilter || "all"} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   {categorias.map(categoria => (
                     <SelectItem key={categoria} value={categoria}>{categoria}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               
-              <Select value={stockFilter} onValueChange={setStockFilter}>
+              <Select value={stockFilter || "all"} onValueChange={setStockFilter}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Estoque" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="baixo">Baixo</SelectItem>
                   <SelectItem value="alerta">Alerta</SelectItem>
                   <SelectItem value="ok">OK</SelectItem>
