@@ -137,7 +137,7 @@ export const AdvancedFilters = ({ open, onOpenChange, filters, onFiltersChange, 
                   if (!value || value === '') return null;
                   return (
                     <Badge key={key} variant="outline" className="flex items-center gap-1">
-                      {key}: {value}
+                      {key}: {String(value)}
                       <Button
                         variant="ghost"
                         size="sm"
