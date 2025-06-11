@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/components/ui/use-toast";
 import { useServices } from "@/hooks/useServices";
+import { useAuth } from "@/contexts/AuthContext";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,6 +23,7 @@ interface AppointmentFormProps {
 
 export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: AppointmentFormProps) => {
   const { getServicePrice, getServiceNames } = useServices();
+  const { getRegisteredBarbers, user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>();
   
   const [formData, setFormData] = useState({
@@ -36,8 +37,17 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
   });
 
   const servicos = getServiceNames();
-  const barbeiros = ["Carlos", "Marcos", "João"];
   
+  // Buscar barbeiros cadastrados
+  const barbeiros = getRegisteredBarbers().map(barber => barber.name);
+  
+  // Se for barbeiro funcionário, só pode agendar para si mesmo
+  if (user?.role === 'barber' && user?.position === 'funcionario') {
+    if (barbeiros.length === 0 || !barbeiros.includes(user.name)) {
+      barbeiros.push(user.name);
+    }
+  }
+
   // Horários baseados na configuração da barbearia
   const getAvailableHorarios = () => {
     if (!selectedDate) return [];
@@ -121,6 +131,18 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
     onSave(newAppointment);
     onOpenChange(false);
     
+    // Limpar formulário
+    setFormData({
+      cliente: "",
+      telefone: "",
+      servico: "",
+      barbeiro: "",
+      data: new Date().toISOString().split('T')[0],
+      horario: "",
+      valor: 0
+    });
+    setSelectedDate(undefined);
+    
     toast({
       title: "Sucesso!",
       description: appointment ? "Agendamento atualizado!" : "Agendamento criado!"
@@ -181,9 +203,16 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
             <Select 
               value={formData.barbeiro} 
               onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro: value }))}
+              disabled={barbeiros.length === 0}
             >
               <SelectTrigger className="input-elegant">
-                <SelectValue placeholder="Selecione o barbeiro" />
+                <SelectValue placeholder={
+                  barbeiros.length === 0 
+                    ? "Nenhum barbeiro cadastrado" 
+                    : user?.role === 'barber' && user?.position === 'funcionario'
+                      ? "Seus agendamentos"
+                      : "Selecione o barbeiro"
+                } />
               </SelectTrigger>
               <SelectContent>
                 {barbeiros.map(barbeiro => (
@@ -191,6 +220,11 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
                 ))}
               </SelectContent>
             </Select>
+            {barbeiros.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Nenhum barbeiro cadastrado no sistema
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -261,7 +295,11 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               Cancelar
             </Button>
-            <Button type="submit" className="btn-primary flex-1">
+            <Button 
+              type="submit" 
+              className="btn-primary flex-1"
+              disabled={barbeiros.length === 0}
+            >
               {appointment ? "Atualizar" : "Criar"}
             </Button>
           </div>

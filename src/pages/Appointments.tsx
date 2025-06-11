@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,54 +17,21 @@ const Appointments = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [filters, setFilters] = useState<any>({});
+  const [agendamentos, setAgendamentos] = useState<any[]>([]);
 
-  // Dados mockados - em produção viriam de uma API
-  const [agendamentos, setAgendamentos] = useState([
-    {
-      id: 1,
-      cliente: "João Silva",
-      telefone: "(11) 99999-9999",
-      servico: "Corte + Barba",
-      barbeiro: "Carlos",
-      data: "2024-06-11",
-      horario: "09:00",
-      status: "confirmado",
-      valor: 45.00
-    },
-    {
-      id: 2,
-      cliente: "Pedro Santos",
-      telefone: "(11) 88888-8888",
-      servico: "Corte Tradicional",
-      barbeiro: "Marcos",
-      data: "2024-06-11",
-      horario: "10:30",
-      status: "pendente",
-      valor: 30.00
-    },
-    {
-      id: 3,
-      cliente: "Lucas Oliveira",
-      telefone: "(11) 77777-7777",
-      servico: "Barba",
-      barbeiro: "Carlos",
-      data: "2024-06-11",
-      horario: "14:00",
-      status: "concluido",
-      valor: 25.00
-    },
-    {
-      id: 4,
-      cliente: "Rafael Costa",
-      telefone: "(11) 66666-6666",
-      servico: "Corte + Barba",
-      barbeiro: "Marcos",
-      data: "2024-06-11",
-      horario: "15:30",
-      status: "confirmado",
-      valor: 45.00
+  // Carregar agendamentos do localStorage
+  useEffect(() => {
+    const storedAppointments = localStorage.getItem('appointments');
+    if (storedAppointments) {
+      setAgendamentos(JSON.parse(storedAppointments));
     }
-  ]);
+  }, []);
+
+  // Salvar agendamentos no localStorage
+  const saveAppointments = (appointments: any[]) => {
+    localStorage.setItem('appointments', JSON.stringify(appointments));
+    setAgendamentos(appointments);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -98,11 +64,15 @@ const Appointments = () => {
   };
 
   const handleSaveAppointment = (appointment: any) => {
+    let updatedAppointments;
+    
     if (editingAppointment) {
-      setAgendamentos(prev => prev.map(ag => ag.id === appointment.id ? appointment : ag));
+      updatedAppointments = agendamentos.map(ag => ag.id === appointment.id ? appointment : ag);
     } else {
-      setAgendamentos(prev => [...prev, appointment]);
+      updatedAppointments = [...agendamentos, appointment];
     }
+    
+    saveAppointments(updatedAppointments);
     setEditingAppointment(null);
   };
 
@@ -112,9 +82,10 @@ const Appointments = () => {
   };
 
   const handleStatusChange = (id: number, newStatus: string) => {
-    setAgendamentos(prev => prev.map(ag => 
+    const updatedAppointments = agendamentos.map(ag => 
       ag.id === id ? { ...ag, status: newStatus } : ag
-    ));
+    );
+    saveAppointments(updatedAppointments);
     
     toast({
       title: "Status atualizado!",
