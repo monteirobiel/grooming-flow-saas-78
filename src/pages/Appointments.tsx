@@ -1,0 +1,258 @@
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, Plus, Filter, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+
+const Appointments = () => {
+  const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+  // Dados mockados - substituir por dados reais da API
+  const agendamentos = [
+    {
+      id: 1,
+      cliente: "João Silva",
+      telefone: "(11) 99999-9999",
+      servico: "Corte + Barba",
+      barbeiro: "Carlos",
+      data: "2024-06-11",
+      horario: "09:00",
+      status: "confirmado",
+      valor: 45.00
+    },
+    {
+      id: 2,
+      cliente: "Pedro Santos",
+      telefone: "(11) 88888-8888",
+      servico: "Corte Tradicional",
+      barbeiro: "Marcos",
+      data: "2024-06-11",
+      horario: "10:30",
+      status: "pendente",
+      valor: 30.00
+    },
+    {
+      id: 3,
+      cliente: "Lucas Oliveira",
+      telefone: "(11) 77777-7777",
+      servico: "Barba",
+      barbeiro: "Carlos",
+      data: "2024-06-11",
+      horario: "14:00",
+      status: "concluido",
+      valor: 25.00
+    },
+    {
+      id: 4,
+      cliente: "Rafael Costa",
+      telefone: "(11) 66666-6666",
+      servico: "Corte + Barba",
+      barbeiro: "Marcos",
+      data: "2024-06-11",
+      horario: "15:30",
+      status: "confirmado",
+      valor: 45.00
+    }
+  ];
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'confirmado':
+        return 'bg-primary text-primary-foreground';
+      case 'concluido':
+        return 'bg-success text-success-foreground';
+      case 'pendente':
+        return 'bg-warning text-warning-foreground';
+      case 'cancelado':
+        return 'bg-destructive text-destructive-foreground';
+      default:
+        return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmado':
+        return 'Confirmado';
+      case 'concluido':
+        return 'Concluído';
+      case 'pendente':
+        return 'Pendente';
+      case 'cancelado':
+        return 'Cancelado';
+      default:
+        return status;
+    }
+  };
+
+  const filteredAgendamentos = agendamentos.filter(agendamento => {
+    const matchesSearch = agendamento.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         agendamento.telefone.includes(searchTerm);
+    const matchesDate = agendamento.data === selectedDate;
+    const matchesBarber = user?.role === 'barber' ? agendamento.barbeiro === user.name : true;
+    
+    return matchesSearch && matchesDate && matchesBarber;
+  });
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Agendamentos</h1>
+          <p className="text-muted-foreground">
+            Gerencie os agendamentos da sua barbearia
+          </p>
+        </div>
+        <Button className="btn-primary">
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Agendamento
+        </Button>
+      </div>
+
+      {/* Filtros */}
+      <Card className="card-modern">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente ou telefone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 input-modern"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input-modern"
+              />
+              <Button variant="outline">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Resumo do Dia */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="card-modern">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total do Dia</CardTitle>
+            <Calendar className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{filteredAgendamentos.length}</div>
+            <p className="text-xs text-muted-foreground">agendamentos</p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-modern">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
+            <Clock className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">
+              R$ {filteredAgendamentos.reduce((total, ag) => total + ag.valor, 0).toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">estimado</p>
+          </CardContent>
+        </Card>
+
+        <Card className="card-modern">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+            <Clock className="h-4 w-4 text-warning" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-warning">
+              {filteredAgendamentos.filter(ag => ag.status === 'pendente').length}
+            </div>
+            <p className="text-xs text-muted-foreground">confirmações</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de Agendamentos */}
+      <div className="space-y-4">
+        {filteredAgendamentos.map((agendamento) => (
+          <Card key={agendamento.id} className="card-modern hover:shadow-lg transition-all duration-200">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                <div>
+                  <h3 className="font-semibold">{agendamento.cliente}</h3>
+                  <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
+                </div>
+                
+                <div>
+                  <p className="font-medium">{agendamento.servico}</p>
+                  <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium">{agendamento.horario}</span>
+                  <Badge className={getStatusColor(agendamento.status)}>
+                    {getStatusLabel(agendamento.status)}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-success">
+                    R$ {agendamento.valor.toFixed(2)}
+                  </span>
+                  <div className="flex gap-2">
+                    {agendamento.status === 'pendente' && (
+                      <Button size="sm" variant="outline">
+                        Confirmar
+                      </Button>
+                    )}
+                    {agendamento.status === 'confirmado' && (
+                      <Button size="sm" className="btn-primary">
+                        Concluir
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline">
+                      Editar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+
+        {filteredAgendamentos.length === 0 && (
+          <Card className="card-modern">
+            <CardContent className="pt-6 text-center">
+              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="font-semibold mb-2">Nenhum agendamento encontrado</h3>
+              <p className="text-muted-foreground mb-4">
+                Não há agendamentos para a data selecionada ou filtros aplicados.
+              </p>
+              <Button className="btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeiro Agendamento
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Appointments;
