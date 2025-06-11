@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Users, Edit, Trash, UserPlus, Crown, User, Eye } from "lucide-react";
+import { Users, Edit, Trash, UserPlus, Crown, User, Eye, BarChart3, Calendar, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
@@ -84,100 +84,233 @@ const Barbers = () => {
     );
   }
 
+  const funcionarios = barbeiros.filter(b => b.position === 'funcionario');
+  const administradores = barbeiros.filter(b => b.position === 'administrador');
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Gestão de Barbeiros</h1>
-        <p className="text-muted-foreground">
-          Gerencie a equipe da sua barbearia
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            Gestão de Barbeiros
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Gerencie sua equipe e monitore o desempenho de cada profissional
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <Button 
+            variant="outline"
+            onClick={() => setShowBarberDataViewer(true)}
+            className="hover:bg-primary/10"
+          >
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Relatórios
+          </Button>
+          <Button 
+            className="btn-primary"
+            onClick={() => {
+              setEditingBarber(null);
+              setShowBarberForm(true);
+            }}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Adicionar Barbeiro
+          </Button>
+        </div>
       </div>
 
-      {/* Gestão de Barbeiros */}
+      {/* Estatísticas Rápidas */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{barbeiros.length}</p>
+                <p className="text-sm text-muted-foreground">Total de Barbeiros</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                <Crown className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{administradores.length}</p>
+                <p className="text-sm text-muted-foreground">Administradores</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                <User className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{funcionarios.length}</p>
+                <p className="text-sm text-muted-foreground">Funcionários</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 border-orange-500/20">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{barbeiros.filter(b => b.status === 'active').length}</p>
+                <p className="text-sm text-muted-foreground">Ativos Hoje</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Lista de Barbeiros */}
       <Card className="card-elegant">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Barbeiros
-            </div>
-            <Button 
-              className="btn-primary"
-              onClick={() => {
-                setEditingBarber(null);
-                setShowBarberForm(true);
-              }}
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Adicionar Barbeiro
-            </Button>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Equipe de Barbeiros
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {barbeiros.map((barbeiro) => (
-              <div key={barbeiro.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <p className="font-medium">{barbeiro.name}</p>
-                    <Badge 
-                      variant={barbeiro.position === 'administrador' ? 'default' : 'secondary'}
-                      className={barbeiro.position === 'administrador' ? 'badge-premium' : ''}
-                    >
-                      {barbeiro.position === 'administrador' ? (
-                        <div className="flex items-center gap-1">
-                          <Crown className="w-3 h-3" />
-                          Administrador
+          <div className="space-y-6">
+            {/* Administradores */}
+            {administradores.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Crown className="w-5 h-5 text-primary" />
+                  Administradores
+                </h3>
+                <div className="grid gap-4">
+                  {administradores.map((barbeiro) => (
+                    <div key={barbeiro.id} className="bg-gradient-to-r from-primary/5 to-transparent p-6 rounded-lg border border-primary/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                            <Crown className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{barbeiro.name}</h4>
+                            <p className="text-sm text-muted-foreground">{barbeiro.email}</p>
+                            <p className="text-sm text-muted-foreground">{barbeiro.phone}</p>
+                            {barbeiro.specialty && (
+                              <p className="text-xs text-primary font-medium">{barbeiro.specialty}</p>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          Funcionário
+                        <div className="flex items-center gap-3">
+                          <Badge className="bg-primary/10 text-primary border-primary/20">
+                            <Crown className="w-3 h-3 mr-1" />
+                            Administrador
+                          </Badge>
+                          <Switch
+                            checked={barbeiro.status === 'active'}
+                            onCheckedChange={() => handleToggleBarberStatus(barbeiro.id)}
+                          />
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            barbeiro.status === 'active' 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-gray-500 text-white'
+                          }`}>
+                            {barbeiro.status === 'active' ? 'Ativo' : 'Inativo'}
+                          </span>
+                          <Button size="sm" variant="outline" onClick={() => handleEditBarber(barbeiro)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteBarber(barbeiro.id)}>
+                            <Trash className="w-4 h-4" />
+                          </Button>
                         </div>
-                      )}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{barbeiro.email}</p>
-                  <p className="text-sm text-muted-foreground">{barbeiro.phone}</p>
-                  {barbeiro.specialty && (
-                    <p className="text-xs text-primary">{barbeiro.specialty}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={barbeiro.status === 'active'}
-                    onCheckedChange={() => handleToggleBarberStatus(barbeiro.id)}
-                  />
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    barbeiro.status === 'active' 
-                      ? 'bg-green-500 text-white' 
-                      : 'bg-gray-500 text-white'
-                  }`}>
-                    {barbeiro.status === 'active' ? 'Ativo' : 'Inativo'}
-                  </span>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleEditBarber(barbeiro)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={() => handleDeleteBarber(barbeiro.id)}
-                  >
-                    <Trash className="w-4 h-4" />
-                  </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Funcionários */}
+            {funcionarios.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  Funcionários
+                </h3>
+                <div className="grid gap-4">
+                  {funcionarios.map((barbeiro) => (
+                    <div key={barbeiro.id} className="bg-gradient-to-r from-blue-500/5 to-transparent p-6 rounded-lg border border-blue-500/10">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
+                            <User className="w-6 h-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{barbeiro.name}</h4>
+                            <p className="text-sm text-muted-foreground">{barbeiro.email}</p>
+                            <p className="text-sm text-muted-foreground">{barbeiro.phone}</p>
+                            {barbeiro.specialty && (
+                              <p className="text-xs text-blue-600 font-medium">{barbeiro.specialty}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+                            <User className="w-3 h-3 mr-1" />
+                            Funcionário
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setShowBarberDataViewer(true)}
+                            className="hover:bg-primary/10"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Switch
+                            checked={barbeiro.status === 'active'}
+                            onCheckedChange={() => handleToggleBarberStatus(barbeiro.id)}
+                          />
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            barbeiro.status === 'active' 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-gray-500 text-white'
+                          }`}>
+                            {barbeiro.status === 'active' ? 'Ativo' : 'Inativo'}
+                          </span>
+                          <Button size="sm" variant="outline" onClick={() => handleEditBarber(barbeiro)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDeleteBarber(barbeiro.id)}>
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {barbeiros.length === 0 && (
-              <div className="text-center py-8">
-                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">Nenhum barbeiro cadastrado</p>
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum barbeiro cadastrado</h3>
+                <p className="text-muted-foreground mb-6">Comece adicionando o primeiro barbeiro da sua equipe</p>
                 <Button 
                   className="btn-primary"
                   onClick={() => setShowBarberForm(true)}
@@ -187,32 +320,6 @@ const Barbers = () => {
                 </Button>
               </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gestão Premium - Visualização de Dados */}
-      <Card className="card-elegant border-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-primary">
-            <Crown className="h-5 w-5" />
-            Gestão Premium
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 bg-primary/10 rounded-lg">
-            <h4 className="font-medium mb-2">Visualizar Dados dos Barbeiros</h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Como administrador, você pode visualizar os agendamentos e faturamento 
-              individual de cada barbeiro funcionário.
-            </p>
-            <Button 
-              className="btn-primary"
-              onClick={() => setShowBarberDataViewer(true)}
-            >
-              <Eye className="w-4 h-4 mr-2" />
-              Visualizar Dados dos Barbeiros
-            </Button>
           </div>
         </CardContent>
       </Card>

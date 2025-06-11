@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "react-router-dom";
@@ -91,34 +92,37 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {user?.role === 'owner' && (
-          <SidebarGroup className="mt-8">
-            <SidebarGroupLabel className="text-primary font-semibold mb-4 px-2 flex items-center gap-2">
-              <Crown className="w-4 h-4" />
-              Gestão Premium
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu className="space-y-2">
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    asChild
-                    isActive={location.pathname === '/barbeiros'}
-                    className={`nav-item group w-full justify-start text-left transition-all duration-200 ${
-                      location.pathname === '/barbeiros' 
-                        ? 'active bg-primary/10 text-primary border-r-2 border-primary' 
-                        : 'hover:bg-accent/50 hover:text-primary'
-                    }`}
-                  >
-                    <Link to="/barbeiros" className="flex items-center gap-3 w-full">
-                      <Users className={`w-5 h-5 nav-icon transition-colors ${
-                        location.pathname === '/barbeiros' ? 'text-primary' : ''
-                      }`} />
-                      <span className="font-medium">Barbeiros</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <>
+            <SidebarSeparator className="my-6" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-orange-600 font-semibold mb-4 px-2 flex items-center gap-2">
+                <Crown className="w-4 h-4" />
+                Administração
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu className="space-y-2">
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={location.pathname === '/barbeiros'}
+                      className={`nav-item group w-full justify-start text-left transition-all duration-200 ${
+                        location.pathname === '/barbeiros' 
+                          ? 'active bg-gradient-to-r from-orange-500/20 to-orange-500/10 text-orange-600 border-r-2 border-orange-500' 
+                          : 'hover:bg-orange-500/10 hover:text-orange-600'
+                      }`}
+                    >
+                      <Link to="/barbeiros" className="flex items-center gap-3 w-full">
+                        <Users className={`w-5 h-5 nav-icon transition-colors ${
+                          location.pathname === '/barbeiros' ? 'text-orange-600' : ''
+                        }`} />
+                        <span className="font-medium">Barbeiros</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
         )}
       </SidebarContent>
 
