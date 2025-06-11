@@ -71,7 +71,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     isActive={location.pathname === item.url}
-                    className={`nav-item w-full justify-start text-left transition-all duration-200 ${
+                    className={`nav-item group w-full justify-start text-left transition-all duration-200 ${
                       location.pathname === item.url 
                         ? 'active bg-primary/10 text-primary border-r-2 border-primary' 
                         : 'hover:bg-accent/50 hover:text-primary'
@@ -99,7 +99,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-2">
                 <SidebarMenuItem>
-                  <SidebarMenuButton className="nav-item w-full justify-start">
+                  <SidebarMenuButton className="nav-item group w-full justify-start">
                     <Users className="w-5 h-5 nav-icon" />
                     <span className="font-medium">Barbeiros</span>
                   </SidebarMenuButton>
