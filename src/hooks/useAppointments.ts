@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 export interface Appointment {
@@ -46,7 +45,7 @@ export const useAppointments = () => {
   // Adicionar novo agendamento
   const addAppointment = (appointment: Appointment) => {
     console.log('➕ Adicionando novo agendamento:', appointment);
-    const updatedAppointments = [...appointments, appointment];
+    const updatedAppointments = [appointment, ...appointments]; // Novo agendamento primeiro
     console.log('📝 Lista atualizada de agendamentos:', updatedAppointments);
     saveAppointments(updatedAppointments);
   };
@@ -66,6 +65,13 @@ export const useAppointments = () => {
     const updatedAppointments = appointments.map(apt => 
       apt.id === id ? { ...apt, status } : apt
     );
+    saveAppointments(updatedAppointments);
+  };
+
+  // Deletar agendamento
+  const deleteAppointment = (id: number) => {
+    console.log('🗑️ Deletando agendamento:', id);
+    const updatedAppointments = appointments.filter(apt => apt.id !== id);
     saveAppointments(updatedAppointments);
   };
 
@@ -101,6 +107,7 @@ export const useAppointments = () => {
     addAppointment,
     updateAppointment,
     updateAppointmentStatus,
+    deleteAppointment,
     loadAppointments
   };
 };

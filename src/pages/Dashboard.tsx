@@ -30,22 +30,27 @@ const Dashboard = () => {
 
   console.log('🔍 Dashboard - agendamentos filtrados:', filteredAgendamentos);
 
-  // Calcular métricas baseadas nos agendamentos reais
+  // Calcular métricas baseadas APENAS nos agendamentos concluídos
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
+  const todayCompletedAppointments = todayAppointments.filter(ag => ag.status === 'concluido');
+  
   const monthlyAppointments = filteredAgendamentos.filter(ag => {
     const appointmentDate = new Date(ag.data);
     const currentDate = new Date();
     return appointmentDate.getMonth() === currentDate.getMonth() && 
            appointmentDate.getFullYear() === currentDate.getFullYear();
   });
+  const monthlyCompletedAppointments = monthlyAppointments.filter(ag => ag.status === 'concluido');
 
   console.log('📅 Dashboard - agendamentos de hoje:', todayAppointments);
+  console.log('💰 Dashboard - agendamentos concluídos hoje:', todayCompletedAppointments);
   console.log('📅 Dashboard - agendamentos do mês:', monthlyAppointments);
+  console.log('💰 Dashboard - agendamentos concluídos do mês:', monthlyCompletedAppointments);
 
   const dashboardData = {
-    faturamentoHoje: todayAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
-    faturamentoMes: monthlyAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
+    faturamentoHoje: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
+    faturamentoMes: monthlyCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
     agendamentosHoje: todayAppointments.length,
     agendamentosPendentes: todayAppointments.filter(ag => ag.status === 'pendente').length,
     produtosVendidos: 15,
@@ -70,15 +75,15 @@ const Dashboard = () => {
   console.log('⏰ Dashboard - próximos agendamentos:', proximosAgendamentos);
   console.log('⏰ Dashboard - agendamentos de hoje:', proximosAgendamentosHoje);
 
-  // Serviços mais vendidos baseados nos dados reais
-  const serviceCounts = monthlyAppointments.reduce((acc: any, ag) => {
+  // Serviços mais vendidos baseados APENAS nos dados concluídos
+  const serviceCounts = monthlyCompletedAppointments.reduce((acc: any, ag) => {
     if (ag.servico) {
       acc[ag.servico] = (acc[ag.servico] || 0) + 1;
     }
     return acc;
   }, {});
 
-  const serviceRevenue = monthlyAppointments.reduce((acc: any, ag) => {
+  const serviceRevenue = monthlyCompletedAppointments.reduce((acc: any, ag) => {
     if (ag.servico) {
       acc[ag.servico] = (acc[ag.servico] || 0) + (ag.valor || 0);
     }
@@ -149,7 +154,7 @@ const Dashboard = () => {
               R$ {dashboardData.faturamentoHoje.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              baseado nos agendamentos
+              apenas serviços concluídos
             </p>
           </CardContent>
         </Card>
@@ -181,7 +186,7 @@ const Dashboard = () => {
               R$ {dashboardData.faturamentoMes.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              este mês
+              serviços realizados
             </p>
           </CardContent>
         </Card>

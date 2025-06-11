@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, Filter, Search, Edit, Check, X } from "lucide-react";
+import { Calendar, Clock, Plus, Filter, Search, Edit, Check, X, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppointmentForm } from "@/components/forms/AppointmentForm";
@@ -11,10 +10,21 @@ import { AdvancedFilters } from "@/components/ui/advanced-filters";
 import { toast } from "@/components/ui/use-toast";
 import { useAppointments } from "@/hooks/useAppointments";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Appointments = () => {
   const { user } = useAuth();
-  const { appointments, updateAppointmentStatus } = useAppointments();
+  const { appointments, updateAppointmentStatus, deleteAppointment } = useAppointments();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -70,6 +80,15 @@ const Appointments = () => {
     });
   };
 
+  const handleDeleteAppointment = (id: number) => {
+    deleteAppointment(id);
+    
+    toast({
+      title: "Agendamento excluído!",
+      description: "O agendamento foi removido da lista"
+    });
+  };
+
   const applyFilters = (agendamentos: any[]) => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -98,17 +117,15 @@ const Appointments = () => {
     });
   };
 
+  // Ordenar agendamentos: novos primeiro (por ID decrescente), depois por data e horário
   const filteredAgendamentos = applyFilters(appointments).sort((a, b) => {
-    // Ordenar por data (mais recentes primeiro) e depois por horário
-    if (a.data !== b.data) {
-      return new Date(b.data).getTime() - new Date(a.data).getTime();
-    }
-    return a.horario.localeCompare(b.horario);
+    // Primeiro por ID (mais recente primeiro)
+    return b.id - a.id;
   });
 
   const activeFiltersCount = Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length;
 
-  // Calcular estatísticas baseadas na aba ativa
+  // Calcular estatísticas baseadas apenas em agendamentos concluídos
   const getTabStats = () => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -118,7 +135,7 @@ const Appointments = () => {
       );
       return {
         total: proximos.length,
-        faturamento: proximos.reduce((total, ag) => total + ag.valor, 0),
+        faturamento: 0, // Não contabilizar faturamento estimado
         pendentes: proximos.filter(ag => ag.status === 'pendente').length
       };
     } else if (activeTab === "finalizados") {
@@ -140,6 +157,147 @@ const Appointments = () => {
   };
 
   const stats = getTabStats();
+
+  const renderAppointmentCard = (agendamento: any) => (
+    <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
+      <CardContent className="pt-6">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+          {/* Informações do Cliente */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold truncate">{agendamento.cliente}</h3>
+            <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
+            <p className="text-xs text-muted-foreground">{agendamento.data}</p>
+          </div>
+          
+          {/* Serviço e Barbeiro */}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{agendamento.servico}</p>
+            <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
+          </div>
+          
+          {/* Horário e Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium">{agendamento.horario}</span>
+            </div>
+            <Badge className={getStatusColor(agendamento.status)}>
+              {getStatusLabel(agendamento.status)}
+            </Badge>
+          </div>
+          
+          {/* Valor */}
+          <div className="text-right">
+            <span className="font-bold text-primary text-lg">
+              R$ {agendamento.valor.toFixed(2)}
+            </span>
+          </div>
+          
+          {/* Botões de Ação */}
+          <div className="flex flex-wrap gap-2 justify-end">
+            {agendamento.status === 'pendente' && (
+              <>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
+                  className="flex items-center gap-1"
+                >
+                  <Check className="w-4 h-4" />
+                  <span className="hidden sm:inline">Confirmar</span>
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleEditAppointment(agendamento)}
+                  className="flex items-center gap-1"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="hidden sm:inline">Editar</span>
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
+                  className="flex items-center gap-1"
+                >
+                  <X className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cancelar</span>
+                </Button>
+              </>
+            )}
+            
+            {agendamento.status === 'confirmado' && (
+              <Button 
+                size="sm" 
+                className="btn-primary flex items-center gap-1"
+                onClick={() => handleStatusChange(agendamento.id, 'concluido')}
+              >
+                <Check className="w-4 h-4" />
+                <span className="hidden sm:inline">Concluir Serviço</span>
+              </Button>
+            )}
+            
+            {agendamento.status === 'concluido' && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleEditAppointment(agendamento)}
+                className="flex items-center gap-1"
+              >
+                <Edit className="w-4 h-4" />
+                <span className="hidden sm:inline">Ver Detalhes</span>
+              </Button>
+            )}
+            
+            {agendamento.status === 'cancelado' && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => handleEditAppointment(agendamento)}
+                className="flex items-center gap-1"
+              >
+                <Edit className="w-4 h-4" />
+                <span className="hidden sm:inline">Ver Detalhes</span>
+              </Button>
+            )}
+            
+            {/* Botão Excluir - sempre disponível */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="flex items-center gap-1 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Excluir</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir o agendamento de {agendamento.cliente}? 
+                    Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => handleDeleteAppointment(agendamento.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -248,204 +406,20 @@ const Appointments = () => {
         </div>
 
         <TabsContent value="todos" className="space-y-4 mt-6">
-          {/* Lista de Agendamentos - Todos */}
           <div className="space-y-4">
-            {filteredAgendamentos.map((agendamento) => (
-              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div>
-                      <h3 className="font-semibold">{agendamento.cliente}</h3>
-                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
-                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium">{agendamento.servico}</p>
-                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{agendamento.horario}</span>
-                      <Badge className={getStatusColor(agendamento.status)}>
-                        {getStatusLabel(agendamento.status)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-primary">
-                        R$ {agendamento.valor.toFixed(2)}
-                      </span>
-                      <div className="flex gap-2">
-                        {agendamento.status === 'pendente' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Confirmar
-                          </Button>
-                        )}
-                        {agendamento.status === 'confirmado' && (
-                          <Button 
-                            size="sm" 
-                            className="btn-primary"
-                            onClick={() => handleStatusChange(agendamento.id, 'concluido')}
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Concluir
-                          </Button>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditAppointment(agendamento)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editar
-                        </Button>
-                        {agendamento.status !== 'cancelado' && agendamento.status !== 'concluido' && (
-                          <Button 
-                            size="sm" 
-                            variant="destructive"
-                            onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            Cancelar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredAgendamentos.map(renderAppointmentCard)}
           </div>
         </TabsContent>
 
         <TabsContent value="proximos" className="space-y-4 mt-6">
-          {/* Lista de Agendamentos - Próximos */}
           <div className="space-y-4">
-            {filteredAgendamentos.map((agendamento) => (
-              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div>
-                      <h3 className="font-semibold">{agendamento.cliente}</h3>
-                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
-                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium">{agendamento.servico}</p>
-                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{agendamento.horario}</span>
-                      <Badge className={getStatusColor(agendamento.status)}>
-                        {getStatusLabel(agendamento.status)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-primary">
-                        R$ {agendamento.valor.toFixed(2)}
-                      </span>
-                      <div className="flex gap-2">
-                        {agendamento.status === 'pendente' && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Confirmar
-                          </Button>
-                        )}
-                        {agendamento.status === 'confirmado' && (
-                          <Button 
-                            size="sm" 
-                            className="btn-primary"
-                            onClick={() => handleStatusChange(agendamento.id, 'concluido')}
-                          >
-                            <Check className="w-4 h-4 mr-1" />
-                            Concluir
-                          </Button>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditAppointment(agendamento)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
-                        >
-                          <X className="w-4 h-4 mr-1" />
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredAgendamentos.map(renderAppointmentCard)}
           </div>
         </TabsContent>
 
         <TabsContent value="finalizados" className="space-y-4 mt-6">
-          {/* Lista de Agendamentos - Finalizados */}
           <div className="space-y-4">
-            {filteredAgendamentos.map((agendamento) => (
-              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div>
-                      <h3 className="font-semibold">{agendamento.cliente}</h3>
-                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
-                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
-                    </div>
-                    
-                    <div>
-                      <p className="font-medium">{agendamento.servico}</p>
-                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="font-medium">{agendamento.horario}</span>
-                      <Badge className={getStatusColor(agendamento.status)}>
-                        {getStatusLabel(agendamento.status)}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-primary">
-                        R$ {agendamento.valor.toFixed(2)}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditAppointment(agendamento)}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredAgendamentos.map(renderAppointmentCard)}
           </div>
         </TabsContent>
 
