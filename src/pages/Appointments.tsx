@@ -8,30 +8,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { AdvancedFilters } from "@/components/ui/advanced-filters";
 import { toast } from "@/components/ui/use-toast";
+import { useAppointments } from "@/hooks/useAppointments";
 
 const Appointments = () => {
   const { user } = useAuth();
+  const { appointments, updateAppointmentStatus } = useAppointments();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [filters, setFilters] = useState<any>({});
-  const [agendamentos, setAgendamentos] = useState<any[]>([]);
-
-  // Carregar agendamentos do localStorage
-  useEffect(() => {
-    const storedAppointments = localStorage.getItem('appointments');
-    if (storedAppointments) {
-      setAgendamentos(JSON.parse(storedAppointments));
-    }
-  }, []);
-
-  // Salvar agendamentos no localStorage
-  const saveAppointments = (appointments: any[]) => {
-    localStorage.setItem('appointments', JSON.stringify(appointments));
-    setAgendamentos(appointments);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -64,15 +51,7 @@ const Appointments = () => {
   };
 
   const handleSaveAppointment = (appointment: any) => {
-    let updatedAppointments;
-    
-    if (editingAppointment) {
-      updatedAppointments = agendamentos.map(ag => ag.id === appointment.id ? appointment : ag);
-    } else {
-      updatedAppointments = [...agendamentos, appointment];
-    }
-    
-    saveAppointments(updatedAppointments);
+    // O hook já gerencia a atualização, só precisamos fechar o modal
     setEditingAppointment(null);
   };
 
@@ -82,10 +61,7 @@ const Appointments = () => {
   };
 
   const handleStatusChange = (id: number, newStatus: string) => {
-    const updatedAppointments = agendamentos.map(ag => 
-      ag.id === id ? { ...ag, status: newStatus } : ag
-    );
-    saveAppointments(updatedAppointments);
+    updateAppointmentStatus(id, newStatus);
     
     toast({
       title: "Status atualizado!",
@@ -112,7 +88,7 @@ const Appointments = () => {
     });
   };
 
-  const filteredAgendamentos = applyFilters(agendamentos);
+  const filteredAgendamentos = applyFilters(appointments);
   const activeFiltersCount = Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length;
 
   return (

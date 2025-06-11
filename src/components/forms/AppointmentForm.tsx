@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "@/components/ui/use-toast";
 import { useServices } from "@/hooks/useServices";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAppointments } from "@/hooks/useAppointments";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,6 +25,7 @@ interface AppointmentFormProps {
 export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: AppointmentFormProps) => {
   const { getServicePrice, getServiceNames } = useServices();
   const { getRegisteredBarbers, user } = useAuth();
+  const { addAppointment, updateAppointment } = useAppointments();
   const [selectedDate, setSelectedDate] = useState<Date>();
   
   const [formData, setFormData] = useState({
@@ -128,6 +130,14 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
       status: appointment?.status || "pendente"
     };
 
+    // Usar o hook para gerenciar os agendamentos
+    if (appointment) {
+      updateAppointment(newAppointment);
+    } else {
+      addAppointment(newAppointment);
+    }
+
+    // Chamar callback para compatibilidade
     onSave(newAppointment);
     onOpenChange(false);
     

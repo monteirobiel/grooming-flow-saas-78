@@ -5,21 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useAppointments } from "@/hooks/useAppointments";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { appointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
-  const [agendamentos, setAgendamentos] = useState<any[]>([]);
-
-  // Carregar agendamentos do localStorage
-  useEffect(() => {
-    const storedAppointments = localStorage.getItem('appointments');
-    if (storedAppointments) {
-      setAgendamentos(JSON.parse(storedAppointments));
-    }
-  }, []);
 
   // Verificar se é barbeiro administrador
   const isBarberAdmin = user?.role === 'barber' && user?.position === 'administrador';
@@ -27,8 +20,8 @@ const Dashboard = () => {
 
   // Filtrar agendamentos baseado no usuário
   const filteredAgendamentos = isBarberEmployee 
-    ? agendamentos.filter(ag => ag.barbeiro === user?.name)
-    : agendamentos;
+    ? appointments.filter(ag => ag.barbeiro === user?.name)
+    : appointments;
 
   // Calcular métricas baseadas nos agendamentos reais
   const today = new Date().toISOString().split('T')[0];
@@ -423,3 +416,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+</edits_to_apply>
