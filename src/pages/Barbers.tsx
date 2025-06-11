@@ -5,45 +5,59 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Users, Edit, Trash, UserPlus, Crown, User, Eye, BarChart3, Calendar, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
 import { BarberDataViewer } from "@/components/BarberDataViewer";
 import { toast } from "@/components/ui/use-toast";
 
 const Barbers = () => {
-  const { user } = useAuth();
+  const { user, registerBarber, updateBarber, removeBarber, getRegisteredBarbers } = useAuth();
   const [showBarberForm, setShowBarberForm] = useState(false);
   const [showBarberDataViewer, setShowBarberDataViewer] = useState(false);
   const [editingBarber, setEditingBarber] = useState<any>(null);
-  
-  const [barbeiros, setBarbeiros] = useState([
-    {
-      id: 1,
-      name: "Carlos Silva",
-      email: "carlos@barbearia.com",
-      phone: "(11) 99999-9999",
-      specialty: "Cortes clássicos",
-      position: "administrador",
-      status: "active"
-    },
-    {
-      id: 2,
-      name: "Marcos Santos",
-      email: "marcos@barbearia.com",
-      phone: "(11) 88888-8888",
-      specialty: "Barbas e bigodes",
-      position: "funcionario",
-      status: "active"
-    }
-  ]);
+  const [barbeiros, setBarbeiros] = useState<any[]>([]);
+
+  // Carregar barbeiros do contexto de autenticação
+  useEffect(() => {
+    const loadBarbers = () => {
+      try {
+        const registeredBarbers = getRegisteredBarbers();
+        setBarbeiros(registeredBarbers);
+      } catch (error) {
+        console.error('Erro ao carregar barbeiros:', error);
+      }
+    };
+
+    loadBarbers();
+  }, [getRegisteredBarbers]);
 
   const handleSaveBarber = (barber: any) => {
-    if (editingBarber) {
-      setBarbeiros(prev => prev.map(b => b.id === barber.id ? barber : b));
-    } else {
-      setBarbeiros(prev => [...prev, barber]);
+    try {
+      if (editingBarber) {
+        updateBarber(barber);
+        setBarbeiros(prev => prev.map(b => b.id === barber.id ? barber : b));
+        toast({
+          title: "Sucesso!",
+          description: "Barbeiro atualizado com sucesso!"
+        });
+      } else {
+        registerBarber(barber);
+        const newBarberWithoutPassword = { ...barber };
+        delete newBarberWithoutPassword.password;
+        setBarbeiros(prev => [...prev, newBarberWithoutPassword]);
+        toast({
+          title: "Sucesso!",
+          description: "Barbeiro cadastrado com sucesso! Agora ele pode fazer login no sistema."
+        });
+      }
+      setEditingBarber(null);
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar barbeiro",
+        variant: "destructive"
+      });
     }
-    setEditingBarber(null);
   };
 
   const handleEditBarber = (barber: any) => {
@@ -51,22 +65,51 @@ const Barbers = () => {
     setShowBarberForm(true);
   };
 
-  const handleDeleteBarber = (barberId: number) => {
-    if (confirm("Tem certeza que deseja remover este barbeiro?")) {
-      setBarbeiros(prev => prev.filter(b => b.id !== barberId));
-      toast({
-        title: "Barbeiro removido",
-        description: "O barbeiro foi removido com sucesso"
-      });
+  const handleDeleteBarber = (barberId: string) => {
+    if (confirm("Tem certeza que deseja remover este barbeiro? Ele não poderá mais fazer login no sistema.")) {
+      try {
+        removeBarber(barberId);
+        setBarbeiros(prev => prev.filter(b => b.id !== barberId));
+        toast({
+          title: "Barbeiro removido",
+          description: "O barbeiro foi removido com sucesso"
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao remover barbeiro",
+          variant: "destructive"
+        });
+      }
     }
   };
 
-  const handleToggleBarberStatus = (barberId: number) => {
-    setBarbeiros(prev => prev.map(b => 
-      b.id === barberId 
-        ? { ...b, status: b.status === 'active' ? 'inactive' : 'active' }
-        : b
-    ));
+  const handleToggleBarberStatus = (barberId: string) => {
+    const barber = barbeiros.find(b => b.id === barberId);
+    if (barber) {
+      const updatedBarber = {
+        ...barber,
+        status: barber.status === 'active' ? 'inactive' : 'active'
+      };
+      
+      try {
+        updateBarber(updatedBarber);
+        setBarbeiros(prev => prev.map(b => 
+          b.id === barberId ? updatedBarber : b
+        ));
+        
+        toast({
+          title: "Status atualizado",
+          description: `Barbeiro ${updatedBarber.status === 'active' ? 'ativado' : 'desativado'} com sucesso`
+        });
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar status do barbeiro",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   // Verificar se o usuário tem permissão para acessar esta página

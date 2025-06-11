@@ -42,10 +42,10 @@ const Login = () => {
         title: "Sucesso!",
         description: "Login realizado com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: "E-mail ou senha incorretos.",
+        description: error.message || "E-mail ou senha incorretos.",
         variant: "destructive",
       });
     } finally {
@@ -126,10 +126,15 @@ const Login = () => {
 
           {/* Demo credentials */}
           <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium mb-2">Demo - Use estas credenciais:</p>
+            <p className="text-sm font-medium mb-2">Credenciais de Demonstração:</p>
             <div className="text-xs space-y-1">
               <p><strong>Dono:</strong> dono@barbearia.com / 123456</p>
-              <p><strong>Barbeiro:</strong> barbeiro@barbearia.com / 123456</p>
+              <p className="text-muted-foreground">Acesso completo ao sistema</p>
+            </div>
+            <div className="mt-2 pt-2 border-t border-border">
+              <p className="text-xs text-muted-foreground">
+                Para criar novos barbeiros, faça login como dono e acesse a aba "Barbeiros"
+              </p>
             </div>
           </div>
         </CardContent>

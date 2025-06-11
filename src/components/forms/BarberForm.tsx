@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 interface BarberFormProps {
   open: boolean;
@@ -15,9 +16,11 @@ interface BarberFormProps {
 }
 
 export const BarberForm = ({ open, onOpenChange, barber, onSave }: BarberFormProps) => {
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: barber?.name || "",
     email: barber?.email || "",
+    password: "",
     phone: barber?.phone || "",
     specialty: barber?.specialty || "",
     position: barber?.position || "funcionario"
@@ -35,15 +38,49 @@ export const BarberForm = ({ open, onOpenChange, barber, onSave }: BarberFormPro
       return;
     }
 
+    if (!barber && !formData.password) {
+      toast({
+        title: "Erro",
+        description: "Senha é obrigatória para novos barbeiros",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (formData.password && formData.password.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const newBarber = {
       ...formData,
       id: barber?.id || Date.now(),
       role: 'barber',
-      status: barber?.status || 'active'
+      status: barber?.status || 'active',
+      barbershopId: 'barbearia-1'
     };
+
+    // Se estamos editando e não foi fornecida nova senha, manter a antiga
+    if (barber && !formData.password) {
+      delete newBarber.password;
+    }
 
     onSave(newBarber);
     onOpenChange(false);
+    
+    // Limpar formulário
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      phone: "",
+      specialty: "",
+      position: "funcionario"
+    });
     
     toast({
       title: "Sucesso!",
@@ -82,6 +119,29 @@ export const BarberForm = ({ open, onOpenChange, barber, onSave }: BarberFormPro
               className="input-elegant"
               placeholder="email@exemplo.com"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="password">
+              {barber ? "Nova Senha (deixe vazio para manter atual)" : "Senha *"}
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                className="input-elegant pr-10"
+                placeholder={barber ? "Digite nova senha" : "Mínimo 6 caracteres"}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div>
