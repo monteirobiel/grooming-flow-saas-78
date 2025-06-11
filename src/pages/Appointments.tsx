@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,23 +10,24 @@ import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { AdvancedFilters } from "@/components/ui/advanced-filters";
 import { toast } from "@/components/ui/use-toast";
 import { useAppointments } from "@/hooks/useAppointments";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Appointments = () => {
   const { user } = useAuth();
   const { appointments, updateAppointmentStatus } = useAppointments();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [showAppointmentForm, setShowAppointmentForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<any>(null);
   const [filters, setFilters] = useState<any>({});
+  const [activeTab, setActiveTab] = useState("todos");
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmado':
-        return 'bg-primary text-primary-foreground';
-      case 'concluido':
         return 'bg-green-500 text-white';
+      case 'concluido':
+        return 'bg-blue-500 text-white';
       case 'pendente':
         return 'bg-yellow-500 text-black';
       case 'cancelado':
@@ -51,7 +53,6 @@ const Appointments = () => {
   };
 
   const handleSaveAppointment = (appointment: any) => {
-    // O hook já gerencia a atualização, só precisamos fechar o modal
     setEditingAppointment(null);
   };
 
@@ -70,10 +71,11 @@ const Appointments = () => {
   };
 
   const applyFilters = (agendamentos: any[]) => {
+    const today = new Date().toISOString().split('T')[0];
+    
     return agendamentos.filter(agendamento => {
       const matchesSearch = agendamento.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            agendamento.telefone.includes(searchTerm);
-      const matchesDate = agendamento.data === selectedDate;
       const matchesBarber = user?.role === 'barber' ? agendamento.barbeiro === user.name : true;
       
       // Filtros avançados
@@ -84,12 +86,60 @@ const Appointments = () => {
       if (filters.valorMinimo && agendamento.valor < parseFloat(filters.valorMinimo)) return false;
       if (filters.valorMaximo && agendamento.valor > parseFloat(filters.valorMaximo)) return false;
       
-      return matchesSearch && matchesDate && matchesBarber;
+      // Filtro por abas
+      if (activeTab === "proximos") {
+        return agendamento.data >= today && (agendamento.status === 'pendente' || agendamento.status === 'confirmado');
+      } else if (activeTab === "finalizados") {
+        return agendamento.status === 'concluido' || agendamento.status === 'cancelado';
+      }
+      
+      // "todos" - mostra todos os agendamentos
+      return matchesSearch && matchesBarber;
     });
   };
 
-  const filteredAgendamentos = applyFilters(appointments);
+  const filteredAgendamentos = applyFilters(appointments).sort((a, b) => {
+    // Ordenar por data (mais recentes primeiro) e depois por horário
+    if (a.data !== b.data) {
+      return new Date(b.data).getTime() - new Date(a.data).getTime();
+    }
+    return a.horario.localeCompare(b.horario);
+  });
+
   const activeFiltersCount = Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length;
+
+  // Calcular estatísticas baseadas na aba ativa
+  const getTabStats = () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (activeTab === "proximos") {
+      const proximos = appointments.filter(ag => 
+        ag.data >= today && (ag.status === 'pendente' || ag.status === 'confirmado')
+      );
+      return {
+        total: proximos.length,
+        faturamento: proximos.reduce((total, ag) => total + ag.valor, 0),
+        pendentes: proximos.filter(ag => ag.status === 'pendente').length
+      };
+    } else if (activeTab === "finalizados") {
+      const finalizados = appointments.filter(ag => 
+        ag.status === 'concluido' || ag.status === 'cancelado'
+      );
+      return {
+        total: finalizados.length,
+        faturamento: finalizados.filter(ag => ag.status === 'concluido').reduce((total, ag) => total + ag.valor, 0),
+        pendentes: 0
+      };
+    } else {
+      return {
+        total: appointments.length,
+        faturamento: appointments.filter(ag => ag.status === 'concluido').reduce((total, ag) => total + ag.valor, 0),
+        pendentes: appointments.filter(ag => ag.status === 'pendente').length
+      };
+    }
+  };
+
+  const stats = getTabStats();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -129,12 +179,6 @@ const Appointments = () => {
               </div>
             </div>
             <div className="flex gap-2">
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="input-elegant"
-              />
               <Button 
                 variant="outline" 
                 onClick={() => setShowFilters(true)}
@@ -153,127 +197,266 @@ const Appointments = () => {
         </CardContent>
       </Card>
 
-      {/* Resumo do Dia */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total do Dia</CardTitle>
-            <Calendar className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{filteredAgendamentos.length}</div>
-            <p className="text-xs text-muted-foreground">agendamentos</p>
-          </CardContent>
-        </Card>
+      {/* Abas de Filtro */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="todos">Todos</TabsTrigger>
+          <TabsTrigger value="proximos">Próximos</TabsTrigger>
+          <TabsTrigger value="finalizados">Finalizados</TabsTrigger>
+        </TabsList>
 
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
-            <Clock className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              R$ {filteredAgendamentos.reduce((total, ag) => total + ag.valor, 0).toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">estimado</p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-            <Clock className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">
-              {filteredAgendamentos.filter(ag => ag.status === 'pendente').length}
-            </div>
-            <p className="text-xs text-muted-foreground">confirmações</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Lista de Agendamentos */}
-      <div className="space-y-4">
-        {filteredAgendamentos.map((agendamento) => (
-          <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
-            <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                <div>
-                  <h3 className="font-semibold">{agendamento.cliente}</h3>
-                  <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
-                </div>
-                
-                <div>
-                  <p className="font-medium">{agendamento.servico}</p>
-                  <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium">{agendamento.horario}</span>
-                  <Badge className={getStatusColor(agendamento.status)}>
-                    {getStatusLabel(agendamento.status)}
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-primary">
-                    R$ {agendamento.valor.toFixed(2)}
-                  </span>
-                  <div className="flex gap-2">
-                    {agendamento.status === 'pendente' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
-                      >
-                        <Check className="w-4 h-4 mr-1" />
-                        Confirmar
-                      </Button>
-                    )}
-                    {agendamento.status === 'confirmado' && (
-                      <Button 
-                        size="sm" 
-                        className="btn-primary"
-                        onClick={() => handleStatusChange(agendamento.id, 'concluido')}
-                      >
-                        <Check className="w-4 h-4 mr-1" />
-                        Concluir
-                      </Button>
-                    )}
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEditAppointment(agendamento)}
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
-                    {agendamento.status !== 'cancelado' && agendamento.status !== 'concluido' && (
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        Cancelar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </div>
+        {/* Resumo baseado na aba */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total</CardTitle>
+              <Calendar className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-xs text-muted-foreground">agendamentos</p>
             </CardContent>
           </Card>
-        ))}
 
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
+              <Clock className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">
+                R$ {stats.faturamento.toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {activeTab === "finalizados" ? "realizado" : "estimado"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="card-modern">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+              <Clock className="h-4 w-4 text-warning" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-warning">
+                {stats.pendentes}
+              </div>
+              <p className="text-xs text-muted-foreground">confirmações</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <TabsContent value="todos" className="space-y-4 mt-6">
+          {/* Lista de Agendamentos - Todos */}
+          <div className="space-y-4">
+            {filteredAgendamentos.map((agendamento) => (
+              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div>
+                      <h3 className="font-semibold">{agendamento.cliente}</h3>
+                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
+                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium">{agendamento.servico}</p>
+                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">{agendamento.horario}</span>
+                      <Badge className={getStatusColor(agendamento.status)}>
+                        {getStatusLabel(agendamento.status)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-primary">
+                        R$ {agendamento.valor.toFixed(2)}
+                      </span>
+                      <div className="flex gap-2">
+                        {agendamento.status === 'pendente' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Confirmar
+                          </Button>
+                        )}
+                        {agendamento.status === 'confirmado' && (
+                          <Button 
+                            size="sm" 
+                            className="btn-primary"
+                            onClick={() => handleStatusChange(agendamento.id, 'concluido')}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Concluir
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditAppointment(agendamento)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
+                        {agendamento.status !== 'cancelado' && agendamento.status !== 'concluido' && (
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancelar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="proximos" className="space-y-4 mt-6">
+          {/* Lista de Agendamentos - Próximos */}
+          <div className="space-y-4">
+            {filteredAgendamentos.map((agendamento) => (
+              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div>
+                      <h3 className="font-semibold">{agendamento.cliente}</h3>
+                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
+                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium">{agendamento.servico}</p>
+                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">{agendamento.horario}</span>
+                      <Badge className={getStatusColor(agendamento.status)}>
+                        {getStatusLabel(agendamento.status)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-primary">
+                        R$ {agendamento.valor.toFixed(2)}
+                      </span>
+                      <div className="flex gap-2">
+                        {agendamento.status === 'pendente' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Confirmar
+                          </Button>
+                        )}
+                        {agendamento.status === 'confirmado' && (
+                          <Button 
+                            size="sm" 
+                            className="btn-primary"
+                            onClick={() => handleStatusChange(agendamento.id, 'concluido')}
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Concluir
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditAppointment(agendamento)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="finalizados" className="space-y-4 mt-6">
+          {/* Lista de Agendamentos - Finalizados */}
+          <div className="space-y-4">
+            {filteredAgendamentos.map((agendamento) => (
+              <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div>
+                      <h3 className="font-semibold">{agendamento.cliente}</h3>
+                      <p className="text-sm text-muted-foreground">{agendamento.telefone}</p>
+                      <p className="text-xs text-muted-foreground">{agendamento.data}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="font-medium">{agendamento.servico}</p>
+                      <p className="text-sm text-muted-foreground">com {agendamento.barbeiro}</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      <span className="font-medium">{agendamento.horario}</span>
+                      <Badge className={getStatusColor(agendamento.status)}>
+                        {getStatusLabel(agendamento.status)}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-primary">
+                        R$ {agendamento.valor.toFixed(2)}
+                      </span>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditAppointment(agendamento)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          Ver Detalhes
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* Mensagem quando não há agendamentos */}
         {filteredAgendamentos.length === 0 && (
-          <Card className="card-elegant">
+          <Card className="card-elegant mt-6">
             <CardContent className="pt-6 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">Nenhum agendamento encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                Não há agendamentos para a data selecionada ou filtros aplicados.
+                Não há agendamentos para os filtros aplicados.
               </p>
               <Button 
                 className="btn-primary"
@@ -285,7 +468,7 @@ const Appointments = () => {
             </CardContent>
           </Card>
         )}
-      </div>
+      </Tabs>
 
       {/* Modals */}
       <AppointmentForm
