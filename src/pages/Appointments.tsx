@@ -3,17 +3,24 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, Filter, Search } from "lucide-react";
+import { Calendar, Clock, Plus, Filter, Search, Edit, Check, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppointmentForm } from "@/components/forms/AppointmentForm";
+import { AdvancedFilters } from "@/components/ui/advanced-filters";
+import { toast } from "@/components/ui/use-toast";
 
 const Appointments = () => {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<any>(null);
+  const [filters, setFilters] = useState<any>({});
 
-  // Dados mockados - substituir por dados reais da API
-  const agendamentos = [
+  // Dados mockados - em produção viriam de uma API
+  const [agendamentos, setAgendamentos] = useState([
     {
       id: 1,
       cliente: "João Silva",
@@ -58,16 +65,16 @@ const Appointments = () => {
       status: "confirmado",
       valor: 45.00
     }
-  ];
+  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmado':
         return 'bg-primary text-primary-foreground';
       case 'concluido':
-        return 'bg-success text-success-foreground';
+        return 'bg-green-500 text-white';
       case 'pendente':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-yellow-500 text-black';
       case 'cancelado':
         return 'bg-destructive text-destructive-foreground';
       default:
@@ -90,14 +97,52 @@ const Appointments = () => {
     }
   };
 
-  const filteredAgendamentos = agendamentos.filter(agendamento => {
-    const matchesSearch = agendamento.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         agendamento.telefone.includes(searchTerm);
-    const matchesDate = agendamento.data === selectedDate;
-    const matchesBarber = user?.role === 'barber' ? agendamento.barbeiro === user.name : true;
+  const handleSaveAppointment = (appointment: any) => {
+    if (editingAppointment) {
+      setAgendamentos(prev => prev.map(ag => ag.id === appointment.id ? appointment : ag));
+    } else {
+      setAgendamentos(prev => [...prev, appointment]);
+    }
+    setEditingAppointment(null);
+  };
+
+  const handleEditAppointment = (appointment: any) => {
+    setEditingAppointment(appointment);
+    setShowAppointmentForm(true);
+  };
+
+  const handleStatusChange = (id: number, newStatus: string) => {
+    setAgendamentos(prev => prev.map(ag => 
+      ag.id === id ? { ...ag, status: newStatus } : ag
+    ));
     
-    return matchesSearch && matchesDate && matchesBarber;
-  });
+    toast({
+      title: "Status atualizado!",
+      description: `Agendamento ${newStatus}`
+    });
+  };
+
+  const applyFilters = (agendamentos: any[]) => {
+    return agendamentos.filter(agendamento => {
+      const matchesSearch = agendamento.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           agendamento.telefone.includes(searchTerm);
+      const matchesDate = agendamento.data === selectedDate;
+      const matchesBarber = user?.role === 'barber' ? agendamento.barbeiro === user.name : true;
+      
+      // Filtros avançados
+      if (filters.status && agendamento.status !== filters.status) return false;
+      if (filters.barbeiro && agendamento.barbeiro !== filters.barbeiro) return false;
+      if (filters.dataInicial && agendamento.data < filters.dataInicial) return false;
+      if (filters.dataFinal && agendamento.data > filters.dataFinal) return false;
+      if (filters.valorMinimo && agendamento.valor < parseFloat(filters.valorMinimo)) return false;
+      if (filters.valorMaximo && agendamento.valor > parseFloat(filters.valorMaximo)) return false;
+      
+      return matchesSearch && matchesDate && matchesBarber;
+    });
+  };
+
+  const filteredAgendamentos = applyFilters(agendamentos);
+  const activeFiltersCount = Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -109,14 +154,20 @@ const Appointments = () => {
             Gerencie os agendamentos da sua barbearia
           </p>
         </div>
-        <Button className="btn-primary">
+        <Button 
+          className="btn-primary"
+          onClick={() => {
+            setEditingAppointment(null);
+            setShowAppointmentForm(true);
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Novo Agendamento
         </Button>
       </div>
 
       {/* Filtros */}
-      <Card className="card-modern">
+      <Card className="card-elegant">
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -126,7 +177,7 @@ const Appointments = () => {
                   placeholder="Buscar por cliente ou telefone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 input-modern"
+                  className="pl-10 input-elegant"
                 />
               </div>
             </div>
@@ -135,11 +186,20 @@ const Appointments = () => {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="input-modern"
+                className="input-elegant"
               />
-              <Button variant="outline">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowFilters(true)}
+                className="relative"
+              >
                 <Filter className="w-4 h-4 mr-2" />
                 Filtros
+                {activeFiltersCount > 0 && (
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
               </Button>
             </div>
           </div>
@@ -189,7 +249,7 @@ const Appointments = () => {
       {/* Lista de Agendamentos */}
       <div className="space-y-4">
         {filteredAgendamentos.map((agendamento) => (
-          <Card key={agendamento.id} className="card-modern hover:shadow-lg transition-all duration-200">
+          <Card key={agendamento.id} className="card-elegant hover:shadow-lg transition-all duration-200">
             <CardContent className="pt-6">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
                 <div>
@@ -211,23 +271,48 @@ const Appointments = () => {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-success">
+                  <span className="font-bold text-primary">
                     R$ {agendamento.valor.toFixed(2)}
                   </span>
                   <div className="flex gap-2">
                     {agendamento.status === 'pendente' && (
-                      <Button size="sm" variant="outline">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleStatusChange(agendamento.id, 'confirmado')}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
                         Confirmar
                       </Button>
                     )}
                     {agendamento.status === 'confirmado' && (
-                      <Button size="sm" className="btn-primary">
+                      <Button 
+                        size="sm" 
+                        className="btn-primary"
+                        onClick={() => handleStatusChange(agendamento.id, 'concluido')}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
                         Concluir
                       </Button>
                     )}
-                    <Button size="sm" variant="outline">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEditAppointment(agendamento)}
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
                       Editar
                     </Button>
+                    {agendamento.status !== 'cancelado' && agendamento.status !== 'concluido' && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => handleStatusChange(agendamento.id, 'cancelado')}
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Cancelar
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -236,14 +321,17 @@ const Appointments = () => {
         ))}
 
         {filteredAgendamentos.length === 0 && (
-          <Card className="card-modern">
+          <Card className="card-elegant">
             <CardContent className="pt-6 text-center">
               <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-2">Nenhum agendamento encontrado</h3>
               <p className="text-muted-foreground mb-4">
                 Não há agendamentos para a data selecionada ou filtros aplicados.
               </p>
-              <Button className="btn-primary">
+              <Button 
+                className="btn-primary"
+                onClick={() => setShowAppointmentForm(true)}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Criar Primeiro Agendamento
               </Button>
@@ -251,6 +339,22 @@ const Appointments = () => {
           </Card>
         )}
       </div>
+
+      {/* Modals */}
+      <AppointmentForm
+        open={showAppointmentForm}
+        onOpenChange={setShowAppointmentForm}
+        appointment={editingAppointment}
+        onSave={handleSaveAppointment}
+      />
+
+      <AdvancedFilters
+        open={showFilters}
+        onOpenChange={setShowFilters}
+        filters={filters}
+        onFiltersChange={setFilters}
+        onClearFilters={() => setFilters({})}
+      />
     </div>
   );
 };
