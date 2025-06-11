@@ -99,9 +99,21 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu className="space-y-2">
                 <SidebarMenuItem>
-                  <SidebarMenuButton className="nav-item group w-full justify-start">
-                    <Users className="w-5 h-5 nav-icon" />
-                    <span className="font-medium">Barbeiros</span>
+                  <SidebarMenuButton 
+                    asChild
+                    isActive={location.pathname === '/barbeiros'}
+                    className={`nav-item group w-full justify-start text-left transition-all duration-200 ${
+                      location.pathname === '/barbeiros' 
+                        ? 'active bg-primary/10 text-primary border-r-2 border-primary' 
+                        : 'hover:bg-accent/50 hover:text-primary'
+                    }`}
+                  >
+                    <Link to="/barbeiros" className="flex items-center gap-3 w-full">
+                      <Users className={`w-5 h-5 nav-icon transition-colors ${
+                        location.pathname === '/barbeiros' ? 'text-primary' : ''
+                      }`} />
+                      <span className="font-medium">Barbeiros</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

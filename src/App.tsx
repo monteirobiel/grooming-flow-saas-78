@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Appointments from "./pages/Appointments";
 import Products from "./pages/Products";
 import Settings from "./pages/Settings";
+import Barbers from "./pages/Barbers";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -43,6 +44,13 @@ const App = () => (
               <SidebarProvider>
                 <AppLayout>
                   <Products />
+                </AppLayout>
+              </SidebarProvider>
+            } />
+            <Route path="/barbeiros" element={
+              <SidebarProvider>
+                <AppLayout>
+                  <Barbers />
                 </AppLayout>
               </SidebarProvider>
             } />
