@@ -429,5 +429,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-</edits_to_apply>
