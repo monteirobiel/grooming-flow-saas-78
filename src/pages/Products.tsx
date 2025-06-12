@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -114,43 +115,6 @@ const Products = () => {
       horario: "16:45"
     }
   ]);
-
-  // Função para simular uma venda
-  const simularVenda = (produto: any) => {
-    if (produto.estoque <= 0) {
-      toast({
-        title: "Estoque insuficiente",
-        description: "Não é possível vender um produto sem estoque.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const novaVenda: Venda = {
-      id: Date.now(),
-      produtoId: produto.id,
-      produtoNome: produto.nome,
-      quantidade: 1,
-      valorUnitario: produto.precoVenda,
-      valorTotal: produto.precoVenda,
-      data: new Date().toISOString().split('T')[0],
-      horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setVendas(prev => [novaVenda, ...prev]);
-    
-    // Reduzir estoque
-    setProdutos(prev => prev.map(p => 
-      p.id === produto.id 
-        ? { ...p, estoque: p.estoque - 1 }
-        : p
-    ));
-
-    toast({
-      title: "Venda realizada!",
-      description: `${produto.nome} vendido por R$ ${produto.precoVenda.toFixed(2)}`
-    });
-  };
 
   // Função para simular uma venda com quantidade personalizada
   const simularVendaComQuantidade = (produto: any, quantidade: number) => {
@@ -303,124 +267,19 @@ const Products = () => {
         </div>
         <div className="flex gap-2">
           {user?.role === 'owner' && (
-            <>
-              <Button 
-                className="btn-primary"
-                onClick={() => {
-                  setEditingProduct(null);
-                  setShowProductForm(true);
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Produto
-              </Button>
-              <Button 
-                variant="outline"
-                className="border-green-500 text-green-600 hover:bg-green-50"
-                onClick={() => {
-                  // Scroll para a seção de vendas rápidas
-                  document.getElementById('vendas-rapidas')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Registrar Vendas
-              </Button>
-            </>
+            <Button 
+              className="btn-primary"
+              onClick={() => {
+                setEditingProduct(null);
+                setShowProductForm(true);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Produto
+            </Button>
           )}
         </div>
       </div>
-
-      {/* Seção de Vendas Rápidas - Nova seção */}
-      {user?.role === 'owner' && produtos.length > 0 && (
-        <Card className="card-elegant" id="vendas-rapidas">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-green-500" />
-              <CardTitle>Vendas Rápidas</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Registre vendas rapidamente selecionando o produto e quantidade
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-              {produtos.filter(p => p.estoque > 0).map((produto) => (
-                <div key={produto.id} className="p-3 border rounded-lg hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h4 className="font-medium text-sm">{produto.nome}</h4>
-                      <p className="text-xs text-muted-foreground">{produto.estoque} em estoque</p>
-                    </div>
-                    <span className="text-sm font-medium text-green-600">R$ {produto.precoVenda.toFixed(2)}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button 
-                      size="sm" 
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
-                      onClick={() => simularVendaComQuantidade(produto, 1)}
-                    >
-                      Vender 1
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="px-2 h-8"
-                        >
-                          +
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Vender {produto.nome}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            <div className="space-y-3 mt-4">
-                              <div>
-                                <Label htmlFor="quantidade">Quantidade</Label>
-                                <Input
-                                  id="quantidade"
-                                  type="number"
-                                  min="1"
-                                  max={produto.estoque}
-                                  defaultValue="1"
-                                  className="mt-1"
-                                />
-                              </div>
-                              <div className="text-sm">
-                                <p>Estoque disponível: {produto.estoque} unidades</p>
-                                <p>Valor unitário: R$ {produto.precoVenda.toFixed(2)}</p>
-                              </div>
-                            </div>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={(e) => {
-                              const quantidadeInput = document.getElementById('quantidade') as HTMLInputElement;
-                              const quantidade = parseInt(quantidadeInput.value) || 1;
-                              simularVendaComQuantidade(produto, quantidade);
-                            }}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Confirmar Venda
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {produtos.filter(p => p.estoque > 0).length === 0 && (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground">Nenhum produto com estoque disponível para venda.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Métricas - sempre visíveis */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -714,15 +573,55 @@ const Products = () => {
                         </Button>
                       )}
 
-                      <Button 
-                        size="sm" 
-                        className="bg-green-600 hover:bg-green-700 text-white"
-                        onClick={() => simularVendaComQuantidade(produto, 1)}
-                        disabled={produto.estoque <= 0}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-1" />
-                        Vender
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            disabled={produto.estoque <= 0}
+                          >
+                            <ShoppingCart className="w-4 h-4 mr-1" />
+                            Vender
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Vender {produto.nome}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              <div className="space-y-3 mt-4">
+                                <div>
+                                  <Label htmlFor="quantidade">Quantidade</Label>
+                                  <Input
+                                    id="quantidade"
+                                    type="number"
+                                    min="1"
+                                    max={produto.estoque}
+                                    defaultValue="1"
+                                    className="mt-1"
+                                  />
+                                </div>
+                                <div className="text-sm">
+                                  <p>Estoque disponível: {produto.estoque} unidades</p>
+                                  <p>Valor unitário: R$ {produto.precoVenda.toFixed(2)}</p>
+                                </div>
+                              </div>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={(e) => {
+                                const quantidadeInput = document.getElementById('quantidade') as HTMLInputElement;
+                                const quantidade = parseInt(quantidadeInput.value) || 1;
+                                simularVendaComQuantidade(produto, quantidade);
+                              }}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Confirmar Venda
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   )}
                 </CardContent>
