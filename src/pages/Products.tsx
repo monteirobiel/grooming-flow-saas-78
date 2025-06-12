@@ -1,15 +1,19 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Plus, Search, AlertTriangle, TrendingUp, Edit, Package, Trash2, Filter } from "lucide-react";
+import { ShoppingBag, Plus, Search, AlertTriangle, TrendingUp, Edit, Package, Trash2, CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductForm } from "@/components/forms/ProductForm";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface Venda {
   id: number;
@@ -30,7 +34,7 @@ const Products = () => {
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [salesFilter, setSalesFilter] = useState("all");
-  const [salesDateFilter, setSalesDateFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState<Date>();
 
   // Dados mockados - em produção viriam de uma API
   const [produtos, setProdutos] = useState([
@@ -76,8 +80,8 @@ const Products = () => {
     }
   ]);
 
-  // Dados de vendas mockados
-  const [vendas] = useState<Venda[]>([
+  // Sistema de vendas real
+  const [vendas, setVendas] = useState<Venda[]>([
     {
       id: 1,
       produtoId: 1,
@@ -109,6 +113,43 @@ const Products = () => {
       horario: "16:45"
     }
   ]);
+
+  // Função para simular uma venda
+  const simularVenda = (produto: any) => {
+    if (produto.estoque <= 0) {
+      toast({
+        title: "Estoque insuficiente",
+        description: "Não é possível vender um produto sem estoque.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const novaVenda: Venda = {
+      id: Date.now(),
+      produtoId: produto.id,
+      produtoNome: produto.nome,
+      quantidade: 1,
+      valorUnitario: produto.precoVenda,
+      valorTotal: produto.precoVenda,
+      data: new Date().toISOString().split('T')[0],
+      horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setVendas(prev => [novaVenda, ...prev]);
+    
+    // Reduzir estoque
+    setProdutos(prev => prev.map(p => 
+      p.id === produto.id 
+        ? { ...p, estoque: p.estoque - 1 }
+        : p
+    ));
+
+    toast({
+      title: "Venda realizada!",
+      description: `${produto.nome} vendido por R$ ${produto.precoVenda.toFixed(2)}`
+    });
+  };
 
   const getEstoqueStatus = (estoque: number, minimo: number) => {
     if (estoque <= minimo) {
@@ -142,13 +183,15 @@ const Products = () => {
   };
 
   const handleDeleteProduct = (product: any) => {
-    if (window.confirm(`Tem certeza que deseja excluir o produto "${product.nome}"?`)) {
-      setProdutos(prev => prev.filter(p => p.id !== product.id));
-      toast({
-        title: "Produto excluído!",
-        description: `${product.nome} foi removido do estoque.`
-      });
-    }
+    setProdutos(prev => prev.filter(p => p.id !== product.id));
+    
+    // Remover vendas relacionadas ao produto excluído
+    setVendas(prev => prev.filter(v => v.produtoId !== product.id));
+    
+    toast({
+      title: "Produto excluído!",
+      description: `${product.nome} foi removido do estoque.`
+    });
   };
 
   const handleRestockProduct = (product: any) => {
@@ -195,15 +238,15 @@ const Products = () => {
       return venda.data === today;
     } else if (salesFilter === 'mes') {
       return vendaMonth === vendasMonth;
-    } else if (salesDateFilter) {
-      return venda.data === salesDateFilter;
+    } else if (dateFilter) {
+      return venda.data === format(dateFilter, 'yyyy-MM-dd');
     }
     
     return true;
   });
 
-  // Cálculos das métricas baseados nos produtos cadastrados
-  const totalEstoque = produtos.length > 0 ? produtos.reduce((total, produto) => total + (produto.estoque * produto.precoCusto), 0) : 0;
+  // Cálculos das métricas sempre visíveis (zeradas se não houver produtos/vendas)
+  const totalEstoque = produtos.reduce((total, produto) => total + (produto.estoque * produto.precoCusto), 0);
   const produtosBaixo = produtos.filter(p => p.estoque <= p.estoqueMinimo).length;
   const totalVendas = filteredVendas.reduce((total, venda) => total + venda.valorTotal, 0);
   const categorias = [...new Set(produtos.map(p => p.categoria))];
@@ -232,51 +275,49 @@ const Products = () => {
         )}
       </div>
 
-      {/* Métricas - só aparecem se houver produtos */}
-      {produtos.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="card-elegant">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                R$ {totalEstoque.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">custo total</p>
-            </CardContent>
-          </Card>
+      {/* Métricas - sempre visíveis */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="card-elegant">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Valor do Estoque</CardTitle>
+            <ShoppingBag className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              R$ {totalEstoque.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">custo total</p>
+          </CardContent>
+        </Card>
 
-          <Card className="card-elegant">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Produtos em Baixa</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-500">{produtosBaixo}</div>
-              <p className="text-xs text-muted-foreground">requerem reposição</p>
-            </CardContent>
-          </Card>
+        <Card className="card-elegant">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Produtos em Baixa</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-500">{produtosBaixo}</div>
+            <p className="text-xs text-muted-foreground">requerem reposição</p>
+          </CardContent>
+        </Card>
 
-          <Card className="card-elegant">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Vendas</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-500">
-                R$ {totalVendas.toFixed(2)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {salesFilter === 'hoje' ? 'vendas de hoje' : 
-                 salesFilter === 'mes' ? 'vendas do mês' : 
-                 salesDateFilter ? `vendas de ${salesDateFilter}` : 'total de vendas'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+        <Card className="card-elegant">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vendas</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-500">
+              R$ {totalVendas.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {salesFilter === 'hoje' ? 'vendas de hoje' : 
+               salesFilter === 'mes' ? 'vendas do mês' : 
+               dateFilter ? `vendas de ${format(dateFilter, 'dd/MM/yyyy')}` : 'total de vendas'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Filtros */}
       <Card className="card-elegant">
@@ -329,13 +370,41 @@ const Products = () => {
                 </SelectContent>
               </Select>
 
-              <Input
-                type="date"
-                value={salesDateFilter}
-                onChange={(e) => setSalesDateFilter(e.target.value)}
-                className="w-40"
-                placeholder="Filtrar por data"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-40 justify-start text-left font-normal",
+                      !dateFilter && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFilter ? format(dateFilter, "dd/MM/yyyy") : "Filtrar por data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFilter}
+                    onSelect={setDateFilter}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                  {dateFilter && (
+                    <div className="p-3 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDateFilter(undefined)}
+                        className="w-full"
+                      >
+                        Limpar filtro
+                      </Button>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardContent>
@@ -444,7 +513,7 @@ const Products = () => {
                   </div>
 
                   {user?.role === 'owner' && (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button 
                         size="sm" 
                         variant="outline" 
@@ -454,13 +523,39 @@ const Products = () => {
                         <Edit className="w-4 h-4 mr-1" />
                         Editar
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive" 
-                        onClick={() => handleDeleteProduct(produto)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir o produto "{produto.nome}"?
+                              <br />
+                              <span className="text-yellow-600 font-medium">
+                                Esta ação não pode ser desfeita e todas as vendas relacionadas também serão removidas.
+                              </span>
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteProduct(produto)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Excluir Produto
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+
                       {produto.estoque <= produto.estoqueMinimo && (
                         <Button 
                           size="sm" 
@@ -471,6 +566,15 @@ const Products = () => {
                           Repor
                         </Button>
                       )}
+
+                      <Button 
+                        size="sm" 
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => simularVenda(produto)}
+                        disabled={produto.estoque <= 0}
+                      >
+                        Vender
+                      </Button>
                     </div>
                   )}
                 </CardContent>
@@ -481,52 +585,50 @@ const Products = () => {
       )}
 
       {/* Histórico de Vendas */}
-      {vendas.length > 0 && (
-        <Card className="card-elegant">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              <CardTitle>Histórico de Vendas</CardTitle>
+      <Card className="card-elegant">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-500" />
+            <CardTitle>Histórico de Vendas</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredVendas.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground">
+                {vendas.length === 0 ? 'Nenhuma venda realizada ainda.' : 'Nenhuma venda encontrada para os filtros aplicados.'}
+              </p>
             </div>
-          </CardHeader>
-          <CardContent>
-            {filteredVendas.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground">
-                  Nenhuma venda encontrada para os filtros aplicados.
-                </p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Horário</TableHead>
-                    <TableHead>Produto</TableHead>
-                    <TableHead>Quantidade</TableHead>
-                    <TableHead>Valor Unitário</TableHead>
-                    <TableHead>Total</TableHead>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Horário</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Valor Unitário</TableHead>
+                  <TableHead>Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredVendas.map((venda) => (
+                  <TableRow key={venda.id}>
+                    <TableCell>{new Date(venda.data).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{venda.horario}</TableCell>
+                    <TableCell>{venda.produtoNome}</TableCell>
+                    <TableCell>{venda.quantidade}</TableCell>
+                    <TableCell>R$ {venda.valorUnitario.toFixed(2)}</TableCell>
+                    <TableCell className="font-medium text-green-600">
+                      R$ {venda.valorTotal.toFixed(2)}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredVendas.map((venda) => (
-                    <TableRow key={venda.id}>
-                      <TableCell>{new Date(venda.data).toLocaleDateString('pt-BR')}</TableCell>
-                      <TableCell>{venda.horario}</TableCell>
-                      <TableCell>{venda.produtoNome}</TableCell>
-                      <TableCell>{venda.quantidade}</TableCell>
-                      <TableCell>R$ {venda.valorUnitario.toFixed(2)}</TableCell>
-                      <TableCell className="font-medium text-green-600">
-                        R$ {venda.valorTotal.toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Modal */}
       <ProductForm
