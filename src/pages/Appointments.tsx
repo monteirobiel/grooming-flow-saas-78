@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -262,37 +263,39 @@ const Appointments = () => {
               </Button>
             )}
             
-            {/* Botão Excluir - sempre disponível */}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="flex items-center gap-1 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Excluir</span>
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir o agendamento de {agendamento.cliente}? 
-                    Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={() => handleDeleteAppointment(agendamento.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            {/* Botão Excluir - apenas para status 'confirmado' e 'pendente' */}
+            {(agendamento.status === 'confirmado' || agendamento.status === 'pendente') && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="flex items-center gap-1 text-destructive hover:text-destructive"
                   >
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Excluir</span>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir Agendamento</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir o agendamento de {agendamento.cliente}? 
+                      Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => handleDeleteAppointment(agendamento.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
       </CardContent>
