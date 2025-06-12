@@ -1,14 +1,24 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Users, Edit, Trash, UserPlus, Crown, User, Eye, BarChart3, Calendar, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
 import { BarberDataViewer } from "@/components/BarberDataViewer";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const Barbers = () => {
   const { user, registerBarber, updateBarber, removeBarber, getRegisteredBarbers } = useAuth();
@@ -16,6 +26,7 @@ const Barbers = () => {
   const [showBarberDataViewer, setShowBarberDataViewer] = useState(false);
   const [editingBarber, setEditingBarber] = useState<any>(null);
   const [barbeiros, setBarbeiros] = useState<any[]>([]);
+  const [barberToDelete, setBarberToDelete] = useState<any>(null);
 
   // Carregar barbeiros do contexto de autenticação
   useEffect(() => {
@@ -66,21 +77,20 @@ const Barbers = () => {
   };
 
   const handleDeleteBarber = (barberId: string) => {
-    if (confirm("Tem certeza que deseja remover este barbeiro? Ele não poderá mais fazer login no sistema.")) {
-      try {
-        removeBarber(barberId);
-        setBarbeiros(prev => prev.filter(b => b.id !== barberId));
-        toast({
-          title: "Barbeiro removido",
-          description: "O barbeiro foi removido com sucesso"
-        });
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao remover barbeiro",
-          variant: "destructive"
-        });
-      }
+    try {
+      removeBarber(barberId);
+      setBarbeiros(prev => prev.filter(b => b.id !== barberId));
+      toast({
+        title: "Barbeiro removido",
+        description: "O barbeiro foi removido com sucesso"
+      });
+      setBarberToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao remover barbeiro",
+        variant: "destructive"
+      });
     }
   };
 
@@ -276,9 +286,31 @@ const Barbers = () => {
                           <Button size="sm" variant="outline" onClick={() => handleEditBarber(barbeiro)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteBarber(barbeiro.id)}>
-                            <Trash className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">
+                                <Trash className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja remover o barbeiro <strong>{barbeiro.name}</strong>? 
+                                  Ele não poderá mais fazer login no sistema. Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteBarber(barbeiro.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover barbeiro
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </div>
@@ -338,9 +370,31 @@ const Barbers = () => {
                           <Button size="sm" variant="outline" onClick={() => handleEditBarber(barbeiro)}>
                             <Edit className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteBarber(barbeiro.id)}>
-                            <Trash className="w-4 h-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="destructive">
+                                <Trash className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja remover o barbeiro <strong>{barbeiro.name}</strong>? 
+                                  Ele não poderá mais fazer login no sistema. Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteBarber(barbeiro.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Remover barbeiro
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </div>
