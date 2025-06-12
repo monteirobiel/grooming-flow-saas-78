@@ -11,13 +11,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { appointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
     to: undefined
   });
@@ -223,10 +224,10 @@ const Dashboard = () => {
               <CalendarComponent
                 initialFocus
                 mode="range"
-                defaultMonth={dateRange.from}
+                defaultMonth={new Date()}
                 selected={dateRange}
                 onSelect={setDateRange}
-                numberOfMonths={2}
+                numberOfMonths={1}
                 className={cn("p-3 pointer-events-auto")}
               />
             </PopoverContent>
@@ -244,17 +245,18 @@ const Dashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Métricas Principais */}
+      {/* Métricas Principais - Reorganizadas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card className="card-modern">
+        {/* Faturamento Bruto - Destacado */}
+        <Card className="card-modern border-primary bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
+            <CardTitle className="text-sm font-medium text-primary">
               {isBarberEmployee ? 'Meu Faturamento Bruto' : 'Faturamento Bruto'}
             </CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success">
+            <div className="text-2xl font-bold text-primary">
               R$ {dashboardData.faturamentoBruto.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -266,6 +268,28 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Faturamento Líquido - Ao lado */}
+        <Card className="card-modern">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {isBarberEmployee ? 'Meu Faturamento Líquido' : 'Faturamento Líquido'}
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-success">
+              R$ {dashboardData.faturamentoLiquido.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {dateRange.from && dateRange.to 
+                ? `período selecionado (15% desc.)` 
+                : 'serviços realizados (15% desc.)'
+              }
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Agendamentos Hoje */}
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -277,26 +301,6 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">{dashboardData.agendamentosHoje}</div>
             <p className="text-xs text-muted-foreground">
               {dashboardData.agendamentosPendentes} pendentes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isBarberEmployee ? 'Meu Faturamento Líquido' : 'Faturamento Líquido'}
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              R$ {dashboardData.faturamentoLiquido.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dateRange.from && dateRange.to 
-                ? `período selecionado (15% desc.)` 
-                : 'serviços realizados (15% desc.)'
-              }
             </p>
           </CardContent>
         </Card>
