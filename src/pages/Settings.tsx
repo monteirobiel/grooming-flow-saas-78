@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -238,27 +237,17 @@ const Settings = () => {
 
       {/* Configuração de Comissão - Apenas para donos */}
       {isOwner && (
-        <Card className="card-elegant border-orange-500">
+        <Card className="card-elegant">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-600">
-              <Percent className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2">
+              <Percent className="h-5 w-5 text-primary" />
               Comissão dos Barbeiros
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <p className="text-sm text-orange-800 mb-3">
-                <strong>⚠️ Configuração Crítica:</strong> Esta configuração afeta diretamente 
-                o cálculo do faturamento líquido exibido no dashboard.
-              </p>
-              <p className="text-xs text-orange-700">
-                O faturamento líquido será calculado subtraindo esta porcentagem do faturamento bruto.
-              </p>
-            </div>
-            
             <div className="space-y-3">
               <Label htmlFor="comissao" className="text-base font-semibold">
-                Percentual de Comissão (0% - 100%)
+                Percentual de Comissão
               </Label>
               <div className="flex items-center gap-3">
                 <Input 
@@ -279,12 +268,12 @@ const Settings = () => {
               </p>
             </div>
 
-            <div className="pt-4 border-t border-border">
+            <div className="pt-4 border-t border-border flex justify-center">
               <Button 
-                className="btn-primary w-full" 
+                className="btn-primary w-64" 
                 onClick={handleSaveComissao}
               >
-                Salvar Configuração de Comissão
+                Salvar Configuração
               </Button>
             </div>
           </CardContent>
