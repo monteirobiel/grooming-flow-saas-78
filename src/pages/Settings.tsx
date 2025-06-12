@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Bell, Download, DollarSign, Lock } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Download, DollarSign, Lock, Percent } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ServicePriceForm } from "@/components/forms/ServicePriceForm";
 import { ChangePasswordDialog } from "@/components/forms/ChangePasswordDialog";
 import { toast } from "@/components/ui/use-toast";
@@ -21,6 +21,17 @@ const Settings = () => {
   
   const [showServicePriceForm, setShowServicePriceForm] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+
+  // Estado para configuração de comissão
+  const [comissaoPercentual, setComissaoPercentual] = useState(15);
+
+  // Carregar configuração de comissão do localStorage
+  useEffect(() => {
+    const savedComissao = localStorage.getItem('barbershop-comissao');
+    if (savedComissao) {
+      setComissaoPercentual(parseFloat(savedComissao));
+    }
+  }, []);
 
   const [barbeariaData, setBarbeariaData] = useState({
     nome: "Barbearia do João",
@@ -57,6 +68,31 @@ const Settings = () => {
     toast({
       title: "Relatório exportado!",
       description: `O relatório ${type} foi baixado com sucesso`
+    });
+  };
+
+  // Função para salvar configuração de comissão
+  const handleSaveComissao = () => {
+    // Validar se está entre 0 e 100
+    if (comissaoPercentual < 0 || comissaoPercentual > 100) {
+      toast({
+        title: "Erro de validação",
+        description: "A comissão deve estar entre 0% e 100%",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    localStorage.setItem('barbershop-comissao', comissaoPercentual.toString());
+    
+    // Disparar evento personalizado para atualizar o dashboard
+    window.dispatchEvent(new CustomEvent('comissaoUpdated', { 
+      detail: { comissao: comissaoPercentual } 
+    }));
+
+    toast({
+      title: "Comissão configurada!",
+      description: `Comissão dos barbeiros definida para ${comissaoPercentual}%`
     });
   };
 
@@ -199,6 +235,61 @@ const Settings = () => {
           </p>
         </CardContent>
       </Card>
+
+      {/* Configuração de Comissão - Apenas para donos */}
+      {isOwner && (
+        <Card className="card-elegant border-orange-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-600">
+              <Percent className="h-5 w-5" />
+              Comissão dos Barbeiros
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <p className="text-sm text-orange-800 mb-3">
+                <strong>⚠️ Configuração Crítica:</strong> Esta configuração afeta diretamente 
+                o cálculo do faturamento líquido exibido no dashboard.
+              </p>
+              <p className="text-xs text-orange-700">
+                O faturamento líquido será calculado subtraindo esta porcentagem do faturamento bruto.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <Label htmlFor="comissao" className="text-base font-semibold">
+                Percentual de Comissão (0% - 100%)
+              </Label>
+              <div className="flex items-center gap-3">
+                <Input 
+                  id="comissao"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={comissaoPercentual}
+                  onChange={(e) => setComissaoPercentual(parseFloat(e.target.value) || 0)}
+                  className="input-elegant max-w-32"
+                />
+                <span className="text-muted-foreground font-medium">%</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Exemplo: Com {comissaoPercentual}% de comissão, se o faturamento bruto for R$ 1.000,00, 
+                o faturamento líquido será R$ {(1000 * (100 - comissaoPercentual) / 100).toFixed(2)}
+              </p>
+            </div>
+
+            <div className="pt-4 border-t border-border">
+              <Button 
+                className="btn-primary w-full" 
+                onClick={handleSaveComissao}
+              >
+                Salvar Configuração de Comissão
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Seção exclusiva para donos */}
       {isOwner && (

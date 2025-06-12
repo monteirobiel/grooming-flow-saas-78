@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User, CalendarIcon } from "lucide-react";
@@ -24,6 +25,9 @@ const Dashboard = () => {
   });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+  // Estado para configuração de comissão
+  const [comissaoPercentual, setComissaoPercentual] = useState(15);
+
   // Carregar produtos do localStorage para verificar estoque baixo
   const [produtos, setProdutos] = useState([]);
   
@@ -32,6 +36,25 @@ const Dashboard = () => {
     if (savedProdutos) {
       setProdutos(JSON.parse(savedProdutos));
     }
+  }, []);
+
+  // Carregar configuração de comissão do localStorage
+  useEffect(() => {
+    const savedComissao = localStorage.getItem('barbershop-comissao');
+    if (savedComissao) {
+      setComissaoPercentual(parseFloat(savedComissao));
+    }
+
+    // Listener para atualizações da comissão
+    const handleComissaoUpdate = (event: any) => {
+      setComissaoPercentual(event.detail.comissao);
+    };
+
+    window.addEventListener('comissaoUpdated', handleComissaoUpdate);
+    
+    return () => {
+      window.removeEventListener('comissaoUpdated', handleComissaoUpdate);
+    };
   }, []);
 
   // Log sempre que appointments mudar no Dashboard
@@ -58,10 +81,10 @@ const Dashboard = () => {
       const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
       const todayCompletedAppointments = todayAppointments.filter(ag => ag.status === 'concluido');
       
-      return {
-        bruto: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
-        liquido: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0) * 0.85 // 15% de desconto para liquido
-      };
+      const bruto = todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
+      const liquido = bruto * (100 - comissaoPercentual) / 100;
+
+      return { bruto, liquido };
     }
 
     // Filtrar agendamentos do período selecionado
@@ -73,7 +96,7 @@ const Dashboard = () => {
     const periodCompletedAppointments = periodAppointments.filter(ag => ag.status === 'concluido');
     
     const bruto = periodCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
-    const liquido = bruto * 0.85; // 15% de desconto para liquido
+    const liquido = bruto * (100 - comissaoPercentual) / 100;
 
     return { bruto, liquido };
   };
@@ -282,8 +305,8 @@ const Dashboard = () => {
             </div>
             <p className="text-xs text-muted-foreground">
               {dateRange.from && dateRange.to 
-                ? `período selecionado (15% desc.)` 
-                : 'serviços realizados (15% desc.)'
+                ? `período selecionado (${comissaoPercentual}% comissão)` 
+                : `serviços realizados (${comissaoPercentual}% comissão)`
               }
             </p>
           </CardContent>
