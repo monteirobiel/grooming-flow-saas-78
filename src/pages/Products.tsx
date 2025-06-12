@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Plus, Search, AlertTriangle, TrendingUp, Edit, Package, Trash2, CalendarIcon, ShoppingCart } from "lucide-react";
+import { ShoppingBag, Plus, Search, AlertTriangle, TrendingUp, Edit, Package, Trash2, CalendarIcon, ShoppingCart, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -116,8 +115,8 @@ const Products = () => {
     }
   ]);
 
-  // Função para simular uma venda com quantidade personalizada
-  const simularVendaComQuantidade = (produto: any, quantidade: number) => {
+  // Função para simular uma venda com quantidade, data e horário personalizados
+  const simularVendaComQuantidade = (produto: any, quantidade: number, dataVenda: Date, horarioVenda: string) => {
     if (produto.estoque < quantidade) {
       toast({
         title: "Estoque insuficiente",
@@ -134,8 +133,8 @@ const Products = () => {
       quantidade: quantidade,
       valorUnitario: produto.precoVenda,
       valorTotal: produto.precoVenda * quantidade,
-      data: new Date().toISOString().split('T')[0],
-      horario: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      data: dataVenda.toISOString().split('T')[0],
+      horario: horarioVenda
     };
 
     setVendas(prev => [novaVenda, ...prev]);
@@ -149,7 +148,7 @@ const Products = () => {
 
     toast({
       title: "Venda realizada!",
-      description: `${quantidade}x ${produto.nome} vendido(s) por R$ ${novaVenda.valorTotal.toFixed(2)}`
+      description: `${quantidade}x ${produto.nome} vendido(s) por R$ ${novaVenda.valorTotal.toFixed(2)} em ${format(dataVenda, 'dd/MM/yyyy')} às ${horarioVenda}`
     });
     
     return true;
@@ -588,7 +587,7 @@ const Products = () => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Vender {produto.nome}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              <div className="space-y-3 mt-4">
+                              <div className="space-y-4 mt-4">
                                 <div>
                                   <Label htmlFor="quantidade">Quantidade</Label>
                                   <Input
@@ -600,7 +599,55 @@ const Products = () => {
                                     className="mt-1"
                                   />
                                 </div>
-                                <div className="text-sm">
+
+                                <div>
+                                  <Label htmlFor="dataVenda">Data da Venda</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        id="dataVenda"
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal mt-1",
+                                          "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        <span id="dataVendaText">Selecionar data</span>
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <Calendar
+                                        mode="single"
+                                        onSelect={(date) => {
+                                          if (date) {
+                                            const button = document.getElementById('dataVenda');
+                                            const text = document.getElementById('dataVendaText');
+                                            if (button && text) {
+                                              button.setAttribute('data-selected-date', date.toISOString());
+                                              text.textContent = format(date, 'dd/MM/yyyy');
+                                              button.classList.remove('text-muted-foreground');
+                                            }
+                                          }
+                                        }}
+                                        initialFocus
+                                        className="pointer-events-auto"
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+
+                                <div>
+                                  <Label htmlFor="horarioVenda">Horário da Venda</Label>
+                                  <Input
+                                    id="horarioVenda"
+                                    type="time"
+                                    defaultValue={new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    className="mt-1"
+                                  />
+                                </div>
+
+                                <div className="text-sm border-t pt-3">
                                   <p>Estoque disponível: {produto.estoque} unidades</p>
                                   <p>Valor unitário: R$ {produto.precoVenda.toFixed(2)}</p>
                                 </div>
@@ -612,8 +659,16 @@ const Products = () => {
                             <AlertDialogAction 
                               onClick={(e) => {
                                 const quantidadeInput = document.getElementById('quantidade') as HTMLInputElement;
+                                const dataButton = document.getElementById('dataVenda') as HTMLButtonElement;
+                                const horarioInput = document.getElementById('horarioVenda') as HTMLInputElement;
+                                
                                 const quantidade = parseInt(quantidadeInput.value) || 1;
-                                simularVendaComQuantidade(produto, quantidade);
+                                const dataVenda = dataButton.getAttribute('data-selected-date') 
+                                  ? new Date(dataButton.getAttribute('data-selected-date')!) 
+                                  : new Date();
+                                const horarioVenda = horarioInput.value || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                                
+                                simularVendaComQuantidade(produto, quantidade, dataVenda, horarioVenda);
                               }}
                               className="bg-green-600 hover:bg-green-700"
                             >
