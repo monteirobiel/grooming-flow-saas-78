@@ -1,18 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User } from "lucide-react";
+import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User, CalendarIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { useAppointments } from "@/hooks/useAppointments";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { appointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined
+  });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   // Carregar produtos do localStorage para verificar estoque baixo
   const [produtos, setProdutos] = useState([]);
@@ -40,6 +49,34 @@ const Dashboard = () => {
 
   console.log('🔍 Dashboard - agendamentos filtrados:', filteredAgendamentos);
 
+  // Função para calcular faturamento baseado em período
+  const calculateRevenueForPeriod = (startDate?: Date, endDate?: Date) => {
+    if (!startDate || !endDate) {
+      // Se não há período selecionado, usar dados de hoje
+      const today = new Date().toISOString().split('T')[0];
+      const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
+      const todayCompletedAppointments = todayAppointments.filter(ag => ag.status === 'concluido');
+      
+      return {
+        bruto: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
+        liquido: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0) * 0.85 // 15% de desconto para liquido
+      };
+    }
+
+    // Filtrar agendamentos do período selecionado
+    const periodAppointments = filteredAgendamentos.filter(ag => {
+      const appointmentDate = new Date(ag.data);
+      return appointmentDate >= startDate && appointmentDate <= endDate;
+    });
+    
+    const periodCompletedAppointments = periodAppointments.filter(ag => ag.status === 'concluido');
+    
+    const bruto = periodCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
+    const liquido = bruto * 0.85; // 15% de desconto para liquido
+
+    return { bruto, liquido };
+  };
+
   // Calcular métricas baseadas APENAS nos agendamentos concluídos
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
@@ -58,9 +95,11 @@ const Dashboard = () => {
   console.log('📅 Dashboard - agendamentos do mês:', monthlyAppointments);
   console.log('💰 Dashboard - agendamentos concluídos do mês:', monthlyCompletedAppointments);
 
+  const revenueData = calculateRevenueForPeriod(dateRange.from, dateRange.to);
+
   const dashboardData = {
-    faturamentoHoje: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
-    faturamentoMes: monthlyCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
+    faturamentoBruto: revenueData.bruto,
+    faturamentoLiquido: revenueData.liquido,
     agendamentosHoje: todayAppointments.length,
     agendamentosPendentes: todayAppointments.filter(ag => ag.status === 'pendente').length
   };
@@ -151,21 +190,78 @@ const Dashboard = () => {
         </Card>
       )}
 
+      {/* Filtro de Data para Faturamento */}
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Filtrar por Período</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !dateRange.from && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
+                    </>
+                  ) : (
+                    format(dateRange.from, "dd/MM/yyyy")
+                  )
+                ) : (
+                  <span>Selecionar período</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+          {dateRange.from && dateRange.to && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setDateRange({ from: undefined, to: undefined })}
+              className="mt-2 w-full"
+            >
+              Limpar Filtro
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Métricas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {isBarberEmployee ? 'Meu Faturamento Hoje' : 'Faturamento Hoje'}
+              {isBarberEmployee ? 'Meu Faturamento Bruto' : 'Faturamento Bruto'}
             </CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              R$ {dashboardData.faturamentoHoje.toFixed(2)}
+              R$ {dashboardData.faturamentoBruto.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              apenas serviços concluídos
+              {dateRange.from && dateRange.to 
+                ? `período selecionado` 
+                : 'apenas serviços concluídos hoje'
+              }
             </p>
           </CardContent>
         </Card>
@@ -188,16 +284,19 @@ const Dashboard = () => {
         <Card className="card-modern">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              {isBarberEmployee ? 'Meu Faturamento Mensal' : 'Faturamento Mensal'}
+              {isBarberEmployee ? 'Meu Faturamento Líquido' : 'Faturamento Líquido'}
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              R$ {dashboardData.faturamentoMes.toFixed(2)}
+              R$ {dashboardData.faturamentoLiquido.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              serviços realizados
+              {dateRange.from && dateRange.to 
+                ? `período selecionado (15% desc.)` 
+                : 'serviços realizados (15% desc.)'
+              }
             </p>
           </CardContent>
         </Card>
