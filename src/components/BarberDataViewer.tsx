@@ -16,50 +16,120 @@ interface BarberDataViewerProps {
 export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataViewerProps) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>("");
 
-  // Dados mockados para demonstração
-  const getBarberData = (barberId: string) => {
-    const barberNames = ["Carlos", "Marcos"];
-    const isCarlos = barberId === "1";
-    
-    return {
-      faturamentoHoje: isCarlos ? 180.00 : 120.00,
-      faturamentoMes: isCarlos ? 5200.00 : 3800.00,
-      agendamentosHoje: isCarlos ? 6 : 4,
-      agendamentosConcluidos: isCarlos ? 4 : 3,
-      agendamentos: [
-        {
-          id: 1,
-          cliente: isCarlos ? "João Silva" : "Pedro Santos",
-          servico: isCarlos ? "Corte + Barba" : "Corte",
-          horario: isCarlos ? "09:00" : "10:00",
-          valor: isCarlos ? 45.00 : 30.00,
-          status: "concluido"
-        },
-        {
-          id: 2,
-          cliente: isCarlos ? "Lucas Oliveira" : "Rafael Costa",
-          servico: "Barba",
-          horario: isCarlos ? "14:00" : "15:00",
-          valor: 25.00,
-          status: "confirmado"
-        }
-      ]
-    };
+  // Buscar dados reais do barbeiro do localStorage
+  const getBarberRealData = (barberId: string) => {
+    try {
+      // Buscar agendamentos do localStorage
+      const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
+      
+      // Filtrar agendamentos do barbeiro específico
+      const barberAppointments = appointments.filter((apt: any) => apt.barberId === barberId);
+      
+      // Data atual
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+      
+      // Início do mês atual
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      
+      // Agendamentos de hoje
+      const todayAppointments = barberAppointments.filter((apt: any) => 
+        apt.date === todayString
+      );
+      
+      // Agendamentos concluídos de hoje
+      const todayCompletedAppointments = todayAppointments.filter((apt: any) => 
+        apt.status === 'completed'
+      );
+      
+      // Agendamentos do mês atual
+      const currentMonthAppointments = barberAppointments.filter((apt: any) => {
+        const aptDate = new Date(apt.date);
+        return aptDate.getMonth() === currentMonth && aptDate.getFullYear() === currentYear;
+      });
+      
+      // Agendamentos concluídos do mês atual
+      const currentMonthCompletedAppointments = currentMonthAppointments.filter((apt: any) => 
+        apt.status === 'completed'
+      );
+      
+      // Calcular faturamento
+      const calculateRevenue = (appointments: any[]) => {
+        return appointments.reduce((total, apt) => {
+          if (apt.status === 'completed' && apt.price) {
+            return total + parseFloat(apt.price);
+          }
+          return total;
+        }, 0);
+      };
+      
+      const todayRevenue = calculateRevenue(todayCompletedAppointments);
+      const monthRevenue = calculateRevenue(currentMonthCompletedAppointments);
+      
+      // Agendamentos recentes (últimos 5)
+      const recentAppointments = barberAppointments
+        .sort((a: any, b: any) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime())
+        .slice(0, 5)
+        .map((apt: any) => ({
+          id: apt.id,
+          cliente: apt.clientName || 'Cliente não informado',
+          servico: apt.service || 'Serviço não informado',
+          horario: apt.time || '00:00',
+          valor: parseFloat(apt.price) || 0,
+          status: apt.status || 'pending'
+        }));
+      
+      return {
+        faturamentoHoje: todayRevenue,
+        faturamentoMes: monthRevenue,
+        agendamentosHoje: todayAppointments.length,
+        agendamentosConcluidos: todayCompletedAppointments.length,
+        agendamentos: recentAppointments
+      };
+    } catch (error) {
+      console.error('Erro ao buscar dados do barbeiro:', error);
+      // Retornar dados zerados em caso de erro
+      return {
+        faturamentoHoje: 0,
+        faturamentoMes: 0,
+        agendamentosHoje: 0,
+        agendamentosConcluidos: 0,
+        agendamentos: []
+      };
+    }
   };
 
   const selectedBarber = barbeiros.find(b => b.id.toString() === selectedBarberId);
-  const barberData = selectedBarberId ? getBarberData(selectedBarberId) : null;
+  const barberData = selectedBarberId ? getBarberRealData(selectedBarberId) : null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmado':
+      case 'confirmed':
         return 'bg-primary text-primary-foreground';
-      case 'concluido':
+      case 'completed':
         return 'bg-green-500 text-white';
-      case 'pendente':
+      case 'pending':
         return 'bg-yellow-500 text-black';
+      case 'cancelled':
+        return 'bg-red-500 text-white';
       default:
         return 'bg-muted text-muted-foreground';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Confirmado';
+      case 'completed':
+        return 'Concluído';
+      case 'pending':
+        return 'Pendente';
+      case 'cancelled':
+        return 'Cancelado';
+      default:
+        return 'Desconhecido';
     }
   };
 
@@ -103,7 +173,7 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
                     <div>
                       <h3 className="text-xl font-bold">{selectedBarber.name}</h3>
                       <p className="text-muted-foreground">{selectedBarber.email}</p>
-                      <p className="text-sm text-primary">{selectedBarber.specialty}</p>
+                      <p className="text-sm text-primary">{selectedBarber.specialty || 'Especialidade não informada'}</p>
                     </div>
                     <Badge variant="secondary">Funcionário</Badge>
                   </div>
@@ -153,7 +223,7 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      R$ {barberData.faturamentoMes.toLocaleString('pt-BR')}
+                      R$ {barberData.faturamentoMes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </div>
                   </CardContent>
                 </Card>
@@ -165,23 +235,32 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
                   <CardTitle>Agendamentos Recentes</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {barberData.agendamentos.map((agendamento) => (
-                      <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                        <div>
-                          <p className="font-medium">{agendamento.cliente}</p>
-                          <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
+                  {barberData.agendamentos.length > 0 ? (
+                    <div className="space-y-3">
+                      {barberData.agendamentos.map((agendamento) => (
+                        <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div>
+                            <p className="font-medium">{agendamento.cliente}</p>
+                            <p className="text-sm text-muted-foreground">{agendamento.servico}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium">{agendamento.horario}</span>
+                            <span className="font-bold text-success">R$ {agendamento.valor.toFixed(2)}</span>
+                            <Badge className={getStatusColor(agendamento.status)}>
+                              {getStatusLabel(agendamento.status)}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-medium">{agendamento.horario}</span>
-                          <span className="font-bold text-success">R$ {agendamento.valor.toFixed(2)}</span>
-                          <Badge className={getStatusColor(agendamento.status)}>
-                            {agendamento.status === 'concluido' ? 'Concluído' : 'Confirmado'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Nenhum agendamento encontrado para este barbeiro
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>
