@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Bell, Download, DollarSign } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Download, DollarSign, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { ServicePriceForm } from "@/components/forms/ServicePriceForm";
-import { ChangePasswordForm } from "@/components/forms/ChangePasswordForm";
+import { ChangePasswordDialog } from "@/components/forms/ChangePasswordDialog";
 import { toast } from "@/components/ui/use-toast";
 
 const Settings = () => {
@@ -20,6 +20,7 @@ const Settings = () => {
   });
   
   const [showServicePriceForm, setShowServicePriceForm] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   const [barbeariaData, setBarbeariaData] = useState({
     nome: "Barbearia do João",
@@ -59,8 +60,8 @@ const Settings = () => {
     });
   };
 
-  // Verificar se o usuário é administrador
-  const isAdmin = user?.position === 'administrador';
+  // Verificar se o usuário é dono (owner)
+  const isOwner = user?.role === 'owner';
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -73,8 +74,8 @@ const Settings = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Perfil da Barbearia - Apenas para administradores */}
-        {isAdmin && (
+        {/* Perfil da Barbearia - Apenas para donos */}
+        {isOwner && (
           <Card className="card-elegant">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -200,7 +201,7 @@ const Settings = () => {
       </Card>
 
       {/* Seção exclusiva para donos */}
-      {user?.role === 'owner' && (
+      {isOwner && (
         <>
           {/* Relatórios e Exportação */}
           <Card className="card-elegant">
@@ -313,8 +314,31 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Segurança - Alteração de Senha funcional */}
-      <ChangePasswordForm />
+      {/* Segurança */}
+      <Card className="card-modern">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-primary" />
+            Segurança
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Senha</p>
+              <p className="text-sm text-muted-foreground">
+                Altere sua senha de acesso
+              </p>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={() => setShowPasswordDialog(true)}
+            >
+              Alterar Senha
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Feedback */}
       <Card className="card-modern border-primary">
@@ -336,6 +360,11 @@ const Settings = () => {
       <ServicePriceForm
         open={showServicePriceForm}
         onOpenChange={setShowServicePriceForm}
+      />
+      
+      <ChangePasswordDialog
+        open={showPasswordDialog}
+        onOpenChange={setShowPasswordDialog}
       />
     </div>
   );
