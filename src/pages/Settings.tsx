@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Bell, Download, Shield, DollarSign } from "lucide-react";
+import { Settings as SettingsIcon, Bell, Download, DollarSign } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { ServicePriceForm } from "@/components/forms/ServicePriceForm";
+import { ChangePasswordForm } from "@/components/forms/ChangePasswordForm";
 import { toast } from "@/components/ui/use-toast";
 
 const Settings = () => {
@@ -58,6 +59,9 @@ const Settings = () => {
     });
   };
 
+  // Verificar se o usuário é administrador
+  const isAdmin = user?.position === 'administrador';
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -69,61 +73,63 @@ const Settings = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Perfil da Barbearia */}
-        <Card className="card-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <SettingsIcon className="h-5 w-5 text-primary" />
-              Dados da Barbearia
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome da Barbearia</Label>
-              <Input 
-                id="name" 
-                value={barbeariaData.nome}
-                onChange={(e) => setBarbeariaData(prev => ({ ...prev, nome: e.target.value }))}
-                className="input-elegant"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
-              <Input 
-                id="address" 
-                value={barbeariaData.endereco}
-                onChange={(e) => setBarbeariaData(prev => ({ ...prev, endereco: e.target.value }))}
-                className="input-elegant"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <Input 
-                id="phone" 
-                value={barbeariaData.telefone}
-                onChange={(e) => setBarbeariaData(prev => ({ ...prev, telefone: e.target.value }))}
-                className="input-elegant"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={barbeariaData.email}
-                onChange={(e) => setBarbeariaData(prev => ({ ...prev, email: e.target.value }))}
-                className="input-elegant"
-              />
-            </div>
+        {/* Perfil da Barbearia - Apenas para administradores */}
+        {isAdmin && (
+          <Card className="card-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5 text-primary" />
+                Dados da Barbearia
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome da Barbearia</Label>
+                <Input 
+                  id="name" 
+                  value={barbeariaData.nome}
+                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, nome: e.target.value }))}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Input 
+                  id="address" 
+                  value={barbeariaData.endereco}
+                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, endereco: e.target.value }))}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input 
+                  id="phone" 
+                  value={barbeariaData.telefone}
+                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, telefone: e.target.value }))}
+                  className="input-elegant"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={barbeariaData.email}
+                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, email: e.target.value }))}
+                  className="input-elegant"
+                />
+              </div>
 
-            <Button className="btn-primary w-full" onClick={handleSaveBarbeariaData}>
-              Salvar Alterações
-            </Button>
-          </CardContent>
-        </Card>
+              <Button className="btn-primary w-full" onClick={handleSaveBarbeariaData}>
+                Salvar Alterações
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Horário de Funcionamento */}
         <Card className="card-elegant">
@@ -307,28 +313,8 @@ const Settings = () => {
         </CardContent>
       </Card>
 
-      {/* Segurança */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            Segurança
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full justify-start">
-            Alterar Senha
-          </Button>
-          
-          <Button variant="outline" className="w-full justify-start">
-            Ativar Autenticação em Duas Etapas
-          </Button>
-          
-          <Button variant="outline" className="w-full justify-start text-destructive">
-            Encerrar Todas as Sessões
-          </Button>
-        </CardContent>
-      </Card>
+      {/* Segurança - Alteração de Senha funcional */}
+      <ChangePasswordForm />
 
       {/* Feedback */}
       <Card className="card-modern border-primary">
