@@ -14,6 +14,16 @@ const Dashboard = () => {
   const { appointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
 
+  // Carregar produtos do localStorage para verificar estoque baixo
+  const [produtos, setProdutos] = useState([]);
+  
+  useEffect(() => {
+    const savedProdutos = localStorage.getItem('barbershop-produtos');
+    if (savedProdutos) {
+      setProdutos(JSON.parse(savedProdutos));
+    }
+  }, []);
+
   // Log sempre que appointments mudar no Dashboard
   useEffect(() => {
     console.log('🏠 Dashboard - appointments atualizados:', appointments);
@@ -52,10 +62,11 @@ const Dashboard = () => {
     faturamentoHoje: todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
     faturamentoMes: monthlyCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0),
     agendamentosHoje: todayAppointments.length,
-    agendamentosPendentes: todayAppointments.filter(ag => ag.status === 'pendente').length,
-    produtosVendidos: 15,
-    estoqueAlerta: 4,
+    agendamentosPendentes: todayAppointments.filter(ag => ag.status === 'pendente').length
   };
+
+  // Calcular produtos em baixa com base nos dados reais
+  const produtosBaixo = produtos.filter((p: any) => p.estoque <= p.estoqueMinimo);
 
   // Próximos agendamentos (hoje e amanhã)
   const tomorrow = new Date();
@@ -387,47 +398,70 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Alertas e Notificações - Apenas para donos e barbeiros administradores */}
+      {/* Alertas de Produtos em Baixa - Apenas para donos e barbeiros administradores */}
       {(user?.role === 'owner' || isBarberAdmin) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="card-modern border-warning">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-warning">
-                <ShoppingBag className="h-5 w-5" />
-                Produtos em Baixa
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                {dashboardData.estoqueAlerta} produtos precisam de reposição
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => navigate('/produtos')}
-              >
-                Gerenciar Estoque
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="card-modern border-primary">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-primary">
-                <Users className="h-5 w-5" />
-                Relatório Semanal
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-3">
-                {user?.role === 'owner' ? 'Seu' : 'O'} relatório semanal está pronto para visualização
-              </p>
-              <Button variant="outline" size="sm">
-                Ver Relatório
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="card-modern border-warning">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-warning">
+              <ShoppingBag className="h-5 w-5" />
+              Produtos em Baixa
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {produtosBaixo.length > 0 ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground mb-3">
+                  {produtosBaixo.length} produto(s) precisam de reposição:
+                </p>
+                <div className="space-y-2">
+                  {produtosBaixo.slice(0, 3).map((produto: any) => (
+                    <div key={produto.id} className="flex items-center justify-between p-2 bg-muted rounded">
+                      <div>
+                        <p className="font-medium text-sm">{produto.nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Estoque: {produto.estoque} / Mínimo: {produto.estoqueMinimo}
+                        </p>
+                      </div>
+                      <Badge variant="destructive" className="text-xs">
+                        Baixo
+                      </Badge>
+                    </div>
+                  ))}
+                  {produtosBaixo.length > 3 && (
+                    <p className="text-xs text-muted-foreground">
+                      e mais {produtosBaixo.length - 3} produto(s)...
+                    </p>
+                  )}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/produtos')}
+                  className="w-full mt-3"
+                >
+                  Gerenciar Estoque
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  ✅ Todos os produtos estão com estoque adequado
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Não há produtos que precisam de reposição
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/produtos')}
+                  className="mt-3"
+                >
+                  Ver Produtos
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

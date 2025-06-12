@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,8 +37,8 @@ const Products = () => {
   const [salesFilter, setSalesFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState<Date>();
 
-  // Dados mockados - em produção viriam de uma API
-  const [produtos, setProdutos] = useState([
+  // Dados iniciais dos produtos
+  const initialProdutos = [
     {
       id: 1,
       nome: "Pomada Modeladora",
@@ -79,41 +79,66 @@ const Products = () => {
       precoVenda: 22.00,
       fornecedor: "Style Pro"
     }
-  ]);
+  ];
+
+  // Estado dos produtos com persistência
+  const [produtos, setProdutos] = useState(() => {
+    const savedProdutos = localStorage.getItem('barbershop-produtos');
+    if (savedProdutos) {
+      return JSON.parse(savedProdutos);
+    }
+    return initialProdutos;
+  });
 
   // Sistema de vendas real
-  const [vendas, setVendas] = useState<Venda[]>([
-    {
-      id: 1,
-      produtoId: 1,
-      produtoNome: "Pomada Modeladora",
-      quantidade: 2,
-      valorUnitario: 25.00,
-      valorTotal: 50.00,
-      data: "2024-06-12",
-      horario: "09:30"
-    },
-    {
-      id: 2,
-      produtoId: 3,
-      produtoNome: "Óleo para Barba",
-      quantidade: 1,
-      valorUnitario: 35.00,
-      valorTotal: 35.00,
-      data: "2024-06-12",
-      horario: "14:15"
-    },
-    {
-      id: 3,
-      produtoId: 2,
-      produtoNome: "Shampoo Anticaspa",
-      quantidade: 3,
-      valorUnitario: 16.00,
-      valorTotal: 48.00,
-      data: "2024-06-11",
-      horario: "16:45"
+  const [vendas, setVendas] = useState<Venda[]>(() => {
+    const savedVendas = localStorage.getItem('barbershop-vendas');
+    if (savedVendas) {
+      return JSON.parse(savedVendas);
     }
-  ]);
+    return [
+      {
+        id: 1,
+        produtoId: 1,
+        produtoNome: "Pomada Modeladora",
+        quantidade: 2,
+        valorUnitario: 25.00,
+        valorTotal: 50.00,
+        data: "2024-06-12",
+        horario: "09:30"
+      },
+      {
+        id: 2,
+        produtoId: 3,
+        produtoNome: "Óleo para Barba",
+        quantidade: 1,
+        valorUnitario: 35.00,
+        valorTotal: 35.00,
+        data: "2024-06-12",
+        horario: "14:15"
+      },
+      {
+        id: 3,
+        produtoId: 2,
+        produtoNome: "Shampoo Anticaspa",
+        quantidade: 3,
+        valorUnitario: 16.00,
+        valorTotal: 48.00,
+        data: "2024-06-11",
+        horario: "16:45"
+      }
+    ];
+  });
+
+  // Salvar produtos no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('barbershop-produtos', JSON.stringify(produtos));
+  }, [produtos]);
+
+  // Salvar vendas no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem('barbershop-vendas', JSON.stringify(vendas));
+  }, [vendas]);
 
   // Função para simular uma venda com quantidade, data e horário personalizados
   const simularVendaComQuantidade = (produto: any, quantidade: number, dataVenda: Date, horarioVenda: string) => {
