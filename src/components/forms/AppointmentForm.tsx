@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useServices } from "@/hooks/useServices";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppointments } from "@/hooks/useAppointments";
+import { useBarbers } from "@/hooks/useBarbers";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -24,8 +25,9 @@ interface AppointmentFormProps {
 
 export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: AppointmentFormProps) => {
   const { getServicePrice, getServiceNames } = useServices();
-  const { getRegisteredBarbers, user } = useAuth();
+  const { user } = useAuth();
   const { addAppointment, updateAppointment } = useAppointments();
+  const { getAllAvailableBarbers } = useBarbers();
   const [selectedDate, setSelectedDate] = useState<Date>();
   
   const [formData, setFormData] = useState({
@@ -40,13 +42,25 @@ export const AppointmentForm = ({ open, onOpenChange, appointment, onSave }: App
 
   const servicos = getServiceNames();
   
-  // Buscar barbeiros cadastrados
-  const barbeiros = getRegisteredBarbers().map(barber => barber.name);
+  // Usar o hook useBarbers para obter todos os barbeiros disponíveis (incluindo o dono)
+  const allAvailableBarbers = getAllAvailableBarbers();
+  const barbeiros = allAvailableBarbers.map(barber => barber.name);
+  
+  console.log('🔍 Barbeiros disponíveis no formulário:', barbeiros);
+  console.log('👤 Usuário atual:', user);
+  console.log('📋 Todos os barbeiros (objetos completos):', allAvailableBarbers);
   
   // Se for barbeiro funcionário, só pode agendar para si mesmo
   if (user?.role === 'barber' && user?.position === 'funcionario') {
-    if (barbeiros.length === 0 || !barbeiros.includes(user.name)) {
+    const userBarberExists = barbeiros.includes(user.name);
+    if (!userBarberExists) {
+      barbeiros.length = 0; // Clear array
       barbeiros.push(user.name);
+    } else {
+      // Filtrar apenas o próprio barbeiro
+      const filteredBarbers = [user.name];
+      barbeiros.length = 0;
+      barbeiros.push(...filteredBarbers);
     }
   }
 
