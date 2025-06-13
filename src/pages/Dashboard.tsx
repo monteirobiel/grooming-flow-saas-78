@@ -56,38 +56,54 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Escutar mudanças nos agendamentos e recarregar automaticamente
+  // Escutar mudanças nos agendamentos com múltiplos listeners para garantir sincronização
   useEffect(() => {
-    console.log('🔄 Dashboard - configurando listener para appointmentsUpdated');
+    console.log('🔄 Dashboard - configurando múltiplos listeners para sincronização');
     
     const handleAppointmentsUpdate = (event: CustomEvent) => {
       console.log('📨 Dashboard - recebido evento appointmentsUpdated:', event.detail);
-      // Forçar recarregamento dos dados
       loadAppointments();
     };
 
-    // Escutar eventos de mudança nos agendamentos
-    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
-    
-    // Escutar mudanças no localStorage diretamente
+    const handleForceReload = () => {
+      console.log('🔄 Dashboard - forçando reload');
+      loadAppointments();
+    };
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'appointments') {
         console.log('💾 Dashboard - detectada mudança no localStorage de appointments');
         loadAppointments();
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('👁️ Dashboard - página ficou visível, recarregando dados');
+        loadAppointments();
+      }
+    };
     
+    // Múltiplos listeners para garantir sincronização
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
+    window.addEventListener('forceReload', handleForceReload as EventListener);
     window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Verificar mudanças periodicamente (fallback)
+    // Verificar mudanças periodicamente (fallback mais frequente)
     const intervalId = setInterval(() => {
       loadAppointments();
-    }, 5000); // Verifica a cada 5 segundos
+    }, 2000); // Verifica a cada 2 segundos
+    
+    // Carregar dados imediatamente
+    loadAppointments();
     
     return () => {
-      console.log('🧹 Dashboard - removendo listeners');
+      console.log('🧹 Dashboard - removendo todos os listeners');
       window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
+      window.removeEventListener('forceReload', handleForceReload as EventListener);
       window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       clearInterval(intervalId);
     };
   }, [loadAppointments]);
@@ -95,6 +111,7 @@ const Dashboard = () => {
   // Log sempre que appointments mudar no Dashboard
   useEffect(() => {
     console.log('🏠 Dashboard - appointments atualizados:', appointments);
+    console.log('🏠 Dashboard - total de appointments:', appointments.length);
   }, [appointments]);
 
   // Verificar se é barbeiro administrador
@@ -108,13 +125,15 @@ const Dashboard = () => {
 
   console.log('🔍 Dashboard - agendamentos filtrados:', filteredAgendamentos);
 
-  // Função para calcular faturamento baseado em período
+  // Função para calcular faturamento baseado APENAS em serviços concluídos
   const calculateRevenueForPeriod = (startDate?: Date, endDate?: Date) => {
     if (!startDate || !endDate) {
-      // Se não há período selecionado, usar dados de hoje
+      // Se não há período selecionado, usar dados de hoje - APENAS CONCLUÍDOS
       const today = new Date().toISOString().split('T')[0];
       const todayAppointments = filteredAgendamentos.filter(ag => ag.data === today);
       const todayCompletedAppointments = todayAppointments.filter(ag => ag.status === 'concluido');
+      
+      console.log('💰 Calculando faturamento de hoje - apenas concluídos:', todayCompletedAppointments);
       
       const bruto = todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
       const liquido = bruto * (100 - comissaoPercentual) / 100;
@@ -122,13 +141,15 @@ const Dashboard = () => {
       return { bruto, liquido };
     }
 
-    // Filtrar agendamentos do período selecionado
+    // Filtrar agendamentos do período selecionado - APENSA CONCLUÍDOS
     const periodAppointments = filteredAgendamentos.filter(ag => {
       const appointmentDate = new Date(ag.data);
       return appointmentDate >= startDate && appointmentDate <= endDate;
     });
     
     const periodCompletedAppointments = periodAppointments.filter(ag => ag.status === 'concluido');
+    
+    console.log('💰 Calculando faturamento do período - apenas concluídos:', periodCompletedAppointments);
     
     const bruto = periodCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
     const liquido = bruto * (100 - comissaoPercentual) / 100;
@@ -166,7 +187,7 @@ const Dashboard = () => {
   // Calcular produtos em baixa com base nos dados reais
   const produtosBaixo = produtos.filter((p: any) => p.estoque <= p.estoqueMinimo);
 
-  // Próximos agendamentos (hoje e amanhã)
+  // Próximos agendamentos (hoje e amanhã) - TODOS os status, não apenas concluídos
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowStr = tomorrow.toISOString().split('T')[0];
@@ -178,11 +199,11 @@ const Dashboard = () => {
     data: ag.data === today ? "Hoje" : "Amanhã"
   }));
 
-  // Próximos agendamentos (apenas hoje)
+  // Próximos agendamentos (apenas hoje) - TODOS os status
   const proximosAgendamentosHoje = proximosAgendamentos.filter(ag => ag.data === "Hoje");
 
-  console.log('⏰ Dashboard - próximos agendamentos:', proximosAgendamentos);
-  console.log('⏰ Dashboard - agendamentos de hoje:', proximosAgendamentosHoje);
+  console.log('⏰ Dashboard - próximos agendamentos (todos os status):', proximosAgendamentos);
+  console.log('⏰ Dashboard - agendamentos de hoje (todos os status):', proximosAgendamentosHoje);
 
   // Serviços mais vendidos baseados APENAS nos dados concluídos
   const serviceCounts = monthlyCompletedAppointments.reduce((acc: any, ag) => {
@@ -376,6 +397,9 @@ const Dashboard = () => {
           <CardContent className="space-y-4">
             {proximosAgendamentosHoje.length > 0 ? (
               <>
+                <div className="text-sm text-muted-foreground mb-3">
+                  Mostrando {proximosAgendamentosHoje.length} agendamento(s) para hoje
+                </div>
                 {proximosAgendamentosHoje.map((agendamento) => (
                   <div key={agendamento.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
@@ -397,6 +421,7 @@ const Dashboard = () => {
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-primary">{agendamento.horario}</span>
+                      <p className="text-xs text-muted-foreground">R$ {agendamento.valor?.toFixed(2) || '0,00'}</p>
                     </div>
                   </div>
                 ))}
@@ -461,6 +486,9 @@ const Dashboard = () => {
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">
                   Nenhum agendamento para hoje
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Total de agendamentos no sistema: {appointments.length}
                 </p>
                 <Dialog open={isAppointmentsDialogOpen} onOpenChange={setIsAppointmentsDialogOpen}>
                   <DialogTrigger asChild>
