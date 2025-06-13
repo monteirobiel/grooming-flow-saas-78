@@ -1,11 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DollarSign, Calendar, Clock, TrendingUp, Eye, Crown, Shield } from "lucide-react";
+import { DollarSign, Calendar, Clock, TrendingUp, Eye, Crown } from "lucide-react";
 import { useBarbers } from "@/hooks/useBarbers";
 
 interface BarberDataViewerProps {
@@ -17,6 +17,13 @@ interface BarberDataViewerProps {
 export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataViewerProps) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>("");
   const { getAllAvailableBarbers } = useBarbers();
+
+  // Resetar seleção quando o dialog é fechado
+  useEffect(() => {
+    if (!open) {
+      setSelectedBarberId("");
+    }
+  }, [open]);
 
   // Buscar dados reais do barbeiro do localStorage
   const getBarberRealData = (barberId: string) => {
@@ -104,8 +111,8 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
     }
   };
 
-  // Usar todos os barbeiros disponíveis (incluindo o dono)
-  const availableBarbers = getAllAvailableBarbers();
+  // Filtrar apenas barbeiros funcionários (excluir proprietário/gerente)
+  const availableBarbers = getAllAvailableBarbers().filter(barber => barber.role !== 'owner');
   const selectedBarber = availableBarbers.find(b => b.id.toString() === selectedBarberId);
   const barberData = selectedBarberId ? getBarberRealData(selectedBarberId) : null;
 
@@ -140,30 +147,31 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
   };
 
   const getBarberIcon = (barber: any) => {
-    if (barber.role === 'owner') {
-      return <Shield className="w-5 h-5 text-purple-600" />;
-    } else if (barber.position === 'administrador') {
+    if (barber.position === 'administrador') {
       return <Crown className="w-5 h-5 text-primary" />;
     }
     return null;
   };
 
   const getBarberLabel = (barber: any) => {
-    if (barber.role === 'owner') {
-      return 'Gerente/Proprietário';
-    } else if (barber.position === 'administrador') {
+    if (barber.position === 'administrador') {
       return 'Administrador';
     }
     return 'Funcionário';
   };
 
+  const handleClose = () => {
+    setSelectedBarberId("");
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5 text-primary" />
-            Visualizar Dados do Barbeiro
+            Relatórios do Barbeiro
           </DialogTitle>
         </DialogHeader>
         
@@ -195,16 +203,14 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
           {selectedBarber && barberData && (
             <>
               {/* Header do Barbeiro */}
-              <Card className={`border-primary ${selectedBarber.role === 'owner' ? 'bg-gradient-to-r from-purple-500/5 to-transparent' : ''}`}>
+              <Card className="border-primary">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        selectedBarber.role === 'owner' 
-                          ? 'bg-purple-500/10' 
-                          : selectedBarber.position === 'administrador' 
-                            ? 'bg-primary/10' 
-                            : 'bg-blue-500/10'
+                        selectedBarber.position === 'administrador' 
+                          ? 'bg-primary/10' 
+                          : 'bg-blue-500/10'
                       }`}>
                         {getBarberIcon(selectedBarber) || <Eye className="w-6 h-6 text-blue-600" />}
                       </div>
@@ -215,11 +221,9 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
                       </div>
                     </div>
                     <Badge variant="secondary" className={
-                      selectedBarber.role === 'owner' 
-                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' 
-                        : selectedBarber.position === 'administrador'
-                          ? 'bg-primary/10 text-primary border-primary/20'
-                          : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                      selectedBarber.position === 'administrador'
+                        ? 'bg-primary/10 text-primary border-primary/20'
+                        : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
                     }>
                       {getBarberIcon(selectedBarber)}
                       <span className="ml-1">{getBarberLabel(selectedBarber)}</span>
@@ -318,7 +322,7 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
             <div className="text-center py-8">
               <Eye className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">
-                Selecione um barbeiro para visualizar seus dados
+                Selecione um barbeiro para visualizar seus relatórios
               </p>
             </div>
           )}

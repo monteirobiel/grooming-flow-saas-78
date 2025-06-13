@@ -1,451 +1,109 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Settings as SettingsIcon, Bell, Download, DollarSign, Lock, Percent } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Shield, User, Settings as SettingsIcon, Palette } from "lucide-react";
+import { ChangePasswordForm } from "@/components/forms/ChangePasswordForm";
+import { ChangeEmailForm } from "@/components/forms/ChangeEmailForm";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
-import { ServicePriceForm } from "@/components/forms/ServicePriceForm";
-import { ChangePasswordDialog } from "@/components/forms/ChangePasswordDialog";
-import { toast } from "@/components/ui/use-toast";
 
 const Settings = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState({
-    whatsapp: true,
-    email: false,
-    push: true
-  });
-  
-  const [showServicePriceForm, setShowServicePriceForm] = useState(false);
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-
-  // Estado para configuração de comissão
-  const [comissaoPercentual, setComissaoPercentual] = useState(15);
-
-  // Carregar configuração de comissão do localStorage
-  useEffect(() => {
-    const savedComissao = localStorage.getItem('barbershop-comissao');
-    if (savedComissao) {
-      setComissaoPercentual(parseFloat(savedComissao));
-    }
-  }, []);
-
-  const [barbeariaData, setBarbeariaData] = useState({
-    nome: "Barbearia do João",
-    endereco: "Rua das Flores, 123 - Centro",
-    telefone: "(11) 99999-9999",
-    email: "contato@barbearia.com"
-  });
-
-  const [horarios, setHorarios] = useState([
-    { dia: 'Segunda-feira', abertura: '08:00', fechamento: '18:00' },
-    { dia: 'Terça-feira', abertura: '08:00', fechamento: '18:00' },
-    { dia: 'Quarta-feira', abertura: '08:00', fechamento: '18:00' },
-    { dia: 'Quinta-feira', abertura: '08:00', fechamento: '18:00' },
-    { dia: 'Sexta-feira', abertura: '08:00', fechamento: '18:00' },
-    { dia: 'Sábado', abertura: '08:00', fechamento: '16:00' },
-    { dia: 'Domingo', abertura: '', fechamento: '' }
-  ]);
-
-  const handleSaveBarbeariaData = () => {
-    toast({
-      title: "Dados salvos!",
-      description: "Os dados da barbearia foram atualizados"
-    });
-  };
-
-  const handleSaveHorarios = () => {
-    toast({
-      title: "Horários atualizados!",
-      description: "Os horários de funcionamento foram salvos"
-    });
-  };
-
-  const handleExportReport = (type: string) => {
-    toast({
-      title: "Relatório exportado!",
-      description: `O relatório ${type} foi baixado com sucesso`
-    });
-  };
-
-  // Função para salvar configuração de comissão
-  const handleSaveComissao = () => {
-    // Validar se está entre 0 e 100
-    if (comissaoPercentual < 0 || comissaoPercentual > 100) {
-      toast({
-        title: "Erro de validação",
-        description: "A comissão deve estar entre 0% e 100%",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    localStorage.setItem('barbershop-comissao', comissaoPercentual.toString());
-    
-    // Disparar evento personalizado para atualizar o dashboard
-    window.dispatchEvent(new CustomEvent('comissaoUpdated', { 
-      detail: { comissao: comissaoPercentual } 
-    }));
-
-    toast({
-      title: "Comissão configurada!",
-      description: `Comissão dos barbeiros definida para ${comissaoPercentual}%`
-    });
-  };
-
-  // Verificar se o usuário é dono (owner)
-  const isOwner = user?.role === 'owner';
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Configurações</h1>
-        <p className="text-muted-foreground">
-          Gerencie as configurações da sua barbearia
-        </p>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <SettingsIcon className="h-8 w-8 text-primary" />
+        <div>
+          <h1 className="text-3xl font-bold">Configurações</h1>
+          <p className="text-muted-foreground">Gerencie suas preferências e configurações do sistema</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Perfil da Barbearia - Apenas para donos */}
-        {isOwner && (
-          <Card className="card-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <SettingsIcon className="h-5 w-5 text-primary" />
-                Dados da Barbearia
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome da Barbearia</Label>
-                <Input 
-                  id="name" 
-                  value={barbeariaData.nome}
-                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, nome: e.target.value }))}
-                  className="input-elegant"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input 
-                  id="address" 
-                  value={barbeariaData.endereco}
-                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, endereco: e.target.value }))}
-                  className="input-elegant"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input 
-                  id="phone" 
-                  value={barbeariaData.telefone}
-                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, telefone: e.target.value }))}
-                  className="input-elegant"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  value={barbeariaData.email}
-                  onChange={(e) => setBarbeariaData(prev => ({ ...prev, email: e.target.value }))}
-                  className="input-elegant"
-                />
-              </div>
-
-              <Button className="btn-primary w-full" onClick={handleSaveBarbeariaData}>
-                Salvar Alterações
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Horário de Funcionamento */}
-        <Card className="card-elegant">
-          <CardHeader>
-            <CardTitle>Horário de Funcionamento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {horarios.map((horario, index) => (
-              <div key={index} className="flex items-center gap-4">
-                <div className="w-24 text-sm font-medium">
-                  {horario.dia.slice(0, 3)}
-                </div>
-                {horario.abertura ? (
-                  <>
-                    <Input 
-                      type="time" 
-                      value={horario.abertura}
-                      onChange={(e) => setHorarios(prev => prev.map((h, i) => 
-                        i === index ? { ...h, abertura: e.target.value } : h
-                      ))}
-                      className="input-elegant flex-1"
-                    />
-                    <span className="text-muted-foreground">às</span>
-                    <Input 
-                      type="time" 
-                      value={horario.fechamento}
-                      onChange={(e) => setHorarios(prev => prev.map((h, i) => 
-                        i === index ? { ...h, fechamento: e.target.value } : h
-                      ))}
-                      className="input-elegant flex-1"
-                    />
-                  </>
-                ) : (
-                  <span className="text-muted-foreground flex-1">Fechado</span>
-                )}
-              </div>
-            ))}
-            
-            <Button variant="outline" className="w-full" onClick={handleSaveHorarios}>
-              Atualizar Horários
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Gestão de Preços de Serviços */}
-      <Card className="card-elegant">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              Preços dos Serviços
-            </div>
-            <Button 
-              className="btn-primary"
-              onClick={() => setShowServicePriceForm(true)}
-            >
-              Gerenciar Preços
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Configure os preços dos serviços oferecidos pela barbearia. 
-            Os valores serão aplicados automaticamente nos agendamentos.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Configuração de Comissão - Apenas para donos */}
-      {isOwner && (
-        <Card className="card-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Percent className="h-5 w-5 text-primary" />
-              Comissão dos Barbeiros
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <Label htmlFor="comissao" className="text-base font-semibold">
-                Percentual de Comissão
-              </Label>
-              <div className="flex items-center gap-3">
-                <Input 
-                  id="comissao"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  value={comissaoPercentual}
-                  onChange={(e) => setComissaoPercentual(parseFloat(e.target.value) || 0)}
-                  className="input-elegant max-w-32"
-                />
-                <span className="text-muted-foreground font-medium">%</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Exemplo: Com {comissaoPercentual}% de comissão, se o faturamento bruto for R$ 1.000,00, 
-                o faturamento líquido será R$ {(1000 * (100 - comissaoPercentual) / 100).toFixed(2)}
-              </p>
-            </div>
-
-            <div className="pt-4 border-t border-border flex justify-center">
-              <Button 
-                className="btn-primary w-64" 
-                onClick={handleSaveComissao}
-              >
-                Salvar Configuração
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Seção exclusiva para donos */}
-      {isOwner && (
-        <>
-          {/* Relatórios e Exportação */}
-          <Card className="card-elegant">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5 text-primary" />
-                Relatórios
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => handleExportReport('mensal')}
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Relatório Mensal</span>
-                  <span className="text-xs text-muted-foreground">PDF</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => handleExportReport('financeiro')}
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Dados Financeiros</span>
-                  <span className="text-xs text-muted-foreground">Excel</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => handleExportReport('clientes')}
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Lista de Clientes</span>
-                  <span className="text-xs text-muted-foreground">CSV</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex flex-col gap-2"
-                  onClick={() => handleExportReport('estoque')}
-                >
-                  <Download className="w-5 h-5" />
-                  <span>Controle de Estoque</span>
-                  <span className="text-xs text-muted-foreground">PDF</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
-      )}
-
-      {/* Notificações */}
+      {/* Informações do Usuário */}
       <Card className="card-modern">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary" />
-            Notificações
+            <User className="h-5 w-5 text-primary" />
+            Informações do Usuário
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="font-medium">WhatsApp</p>
-              <p className="text-sm text-muted-foreground">
-                Receber lembretes de agendamentos
+              <label className="text-sm font-medium text-muted-foreground">Nome</label>
+              <p className="text-lg font-medium">{user?.name}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
+              <p className="text-lg font-medium">{user?.email}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Cargo</label>
+              <p className="text-lg font-medium">
+                {user?.role === 'owner' ? 'Proprietário' : 'Barbeiro'}
               </p>
             </div>
-            <Switch 
-              checked={notifications.whatsapp}
-              onCheckedChange={(checked) => 
-                setNotifications(prev => ({ ...prev, whatsapp: checked }))
-              }
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">E-mail</p>
-              <p className="text-sm text-muted-foreground">
-                Relatórios e resumos por e-mail
-              </p>
+              <label className="text-sm font-medium text-muted-foreground">ID</label>
+              <p className="text-sm text-muted-foreground font-mono">{user?.id}</p>
             </div>
-            <Switch 
-              checked={notifications.email}
-              onCheckedChange={(checked) => 
-                setNotifications(prev => ({ ...prev, email: checked }))
-              }
-            />
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Push</p>
-              <p className="text-sm text-muted-foreground">
-                Notificações no navegador
-              </p>
-            </div>
-            <Switch 
-              checked={notifications.push}
-              onCheckedChange={(checked) => 
-                setNotifications(prev => ({ ...prev, push: checked }))
-              }
-            />
           </div>
         </CardContent>
       </Card>
 
       {/* Segurança */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Shield className="h-6 w-6 text-primary" />
+          <h2 className="text-2xl font-bold">Segurança</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChangeEmailForm />
+          <ChangePasswordForm />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Preferências do Sistema */}
       <Card className="card-modern">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5 text-primary" />
-            Segurança
+            <Palette className="h-5 w-5 text-primary" />
+            Preferências do Sistema
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Senha</p>
-              <p className="text-sm text-muted-foreground">
-                Altere sua senha de acesso
-              </p>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Tema</h3>
+                <p className="text-sm text-muted-foreground">
+                  O sistema utiliza tema escuro elegante para uma melhor experiência
+                </p>
+              </div>
+              <div className="text-sm text-primary font-medium">
+                Tema Escuro Ativo
+              </div>
             </div>
-            <Button 
-              variant="outline"
-              onClick={() => setShowPasswordDialog(true)}
-            >
-              Alterar Senha
-            </Button>
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Notificações</h3>
+                <p className="text-sm text-muted-foreground">
+                  Receba notificações sobre agendamentos e atualizações
+                </p>
+              </div>
+              <div className="text-sm text-primary font-medium">
+                Habilitadas
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Feedback */}
-      <Card className="card-modern border-primary">
-        <CardHeader>
-          <CardTitle className="text-primary">Feedback</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Encontrou algum bug ou tem sugestões de melhoria? 
-            Queremos ouvir sua opinião!
-          </p>
-          <Button variant="outline" className="w-full">
-            Reportar Bug / Sugestão
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Modals */}
-      <ServicePriceForm
-        open={showServicePriceForm}
-        onOpenChange={setShowServicePriceForm}
-      />
-      
-      <ChangePasswordDialog
-        open={showPasswordDialog}
-        onOpenChange={setShowPasswordDialog}
-      />
     </div>
   );
 };
