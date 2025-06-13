@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ShoppingBag, TrendingUp, Users, DollarSign, Clock, Crown, User, CalendarIcon } from "lucide-react";
@@ -17,7 +16,7 @@ import { DateRange } from "react-day-picker";
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { appointments } = useAppointments();
+  const { appointments, loadAppointments } = useAppointments();
   const [isAppointmentsDialogOpen, setIsAppointmentsDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({
     from: undefined,
@@ -56,6 +55,42 @@ const Dashboard = () => {
       window.removeEventListener('comissaoUpdated', handleComissaoUpdate);
     };
   }, []);
+
+  // Escutar mudanças nos agendamentos e recarregar automaticamente
+  useEffect(() => {
+    console.log('🔄 Dashboard - configurando listener para appointmentsUpdated');
+    
+    const handleAppointmentsUpdate = (event: CustomEvent) => {
+      console.log('📨 Dashboard - recebido evento appointmentsUpdated:', event.detail);
+      // Forçar recarregamento dos dados
+      loadAppointments();
+    };
+
+    // Escutar eventos de mudança nos agendamentos
+    window.addEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
+    
+    // Escutar mudanças no localStorage diretamente
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'appointments') {
+        console.log('💾 Dashboard - detectada mudança no localStorage de appointments');
+        loadAppointments();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Verificar mudanças periodicamente (fallback)
+    const intervalId = setInterval(() => {
+      loadAppointments();
+    }, 5000); // Verifica a cada 5 segundos
+    
+    return () => {
+      console.log('🧹 Dashboard - removendo listeners');
+      window.removeEventListener('appointmentsUpdated', handleAppointmentsUpdate as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(intervalId);
+    };
+  }, [loadAppointments]);
 
   // Log sempre que appointments mudar no Dashboard
   useEffect(() => {
@@ -349,6 +384,16 @@ const Dashboard = () => {
                       {!isBarberEmployee && (
                         <p className="text-xs text-muted-foreground">com {agendamento.barbeiro}</p>
                       )}
+                      <Badge 
+                        variant={
+                          agendamento.status === 'concluido' ? 'default' : 
+                          agendamento.status === 'confirmado' ? 'secondary' : 
+                          'outline'
+                        }
+                        className="mt-1"
+                      >
+                        {agendamento.status}
+                      </Badge>
                     </div>
                     <div className="text-right">
                       <span className="font-bold text-primary">{agendamento.horario}</span>
