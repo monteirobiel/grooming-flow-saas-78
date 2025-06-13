@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Users, Edit, Trash, UserPlus, Crown, User, Eye, BarChart3, Calendar, DollarSign } from "lucide-react";
+import { Users, Edit, Trash, UserPlus, Crown, User, Eye, BarChart3, Calendar, DollarSign, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { BarberForm } from "@/components/forms/BarberForm";
@@ -33,14 +33,35 @@ const Barbers = () => {
     const loadBarbers = () => {
       try {
         const registeredBarbers = getRegisteredBarbers();
-        setBarbeiros(registeredBarbers);
+        // Adicionar o proprietário à lista se ele for owner
+        let allBarbers = [...registeredBarbers];
+        
+        if (user?.role === 'owner') {
+          // Verificar se o proprietário já não está na lista
+          const ownerExists = allBarbers.some(b => b.id === user.id);
+          if (!ownerExists) {
+            allBarbers.unshift({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              phone: user.phone || '',
+              specialty: 'Gestão e Cortes',
+              position: 'gerente',
+              role: 'owner',
+              status: 'active',
+              barbershopId: user.barbershopId
+            });
+          }
+        }
+        
+        setBarbeiros(allBarbers);
       } catch (error) {
         console.error('Erro ao carregar barbeiros:', error);
       }
     };
 
     loadBarbers();
-  }, [getRegisteredBarbers]);
+  }, [getRegisteredBarbers, user]);
 
   const handleSaveBarber = (barber: any) => {
     try {
@@ -137,6 +158,7 @@ const Barbers = () => {
     );
   }
 
+  const gerente = barbeiros.find(b => b.position === 'gerente');
   const funcionarios = barbeiros.filter(b => b.position === 'funcionario');
   const administradores = barbeiros.filter(b => b.position === 'administrador');
 
@@ -243,6 +265,44 @@ const Barbers = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
+            {/* Gerente */}
+            {gerente && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-purple-600" />
+                  Gerente
+                </h3>
+                <div className="grid gap-4">
+                  <div className="bg-gradient-to-r from-purple-500/5 to-transparent p-6 rounded-lg border border-purple-500/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center">
+                          <Shield className="w-6 h-6 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold">{gerente.name}</h4>
+                          <p className="text-sm text-muted-foreground">{gerente.email}</p>
+                          <p className="text-sm text-muted-foreground">{gerente.phone}</p>
+                          {gerente.specialty && (
+                            <p className="text-xs text-purple-600 font-medium">{gerente.specialty}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge className="bg-purple-500/10 text-purple-600 border-purple-500/20">
+                          <Shield className="w-3 h-3 mr-1" />
+                          Gerente
+                        </Badge>
+                        <span className="text-xs px-2 py-1 rounded bg-green-500 text-white">
+                          Ativo
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Administradores */}
             {administradores.length > 0 && (
               <div>
