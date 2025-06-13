@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -263,7 +262,10 @@ const Products = () => {
   const totalEstoque = produtos.reduce((total, produto) => total + (produto.estoque * produto.precoCusto), 0);
   const produtosBaixo = produtos.filter(p => p.estoque <= p.estoqueMinimo).length;
   const totalVendas = filteredVendas.reduce((total, venda) => total + venda.valorTotal, 0);
-  const categorias = [...new Set(produtos.map(p => p.categoria))];
+  const categorias = useMemo(() => {
+    const uniqueCategories = Array.from(new Set(produtos.map(p => p.categoria).filter(Boolean))) as string[];
+    return uniqueCategories;
+  }, [produtos]);
 
   return (
     <div className="space-y-6 animate-fade-in">

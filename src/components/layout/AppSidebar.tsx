@@ -1,5 +1,5 @@
 
-import { Calendar, Home, ShoppingBag, Settings, LogOut, Scissors, Crown, TrendingUp, Users } from "lucide-react";
+import { Calendar, ShoppingBag, Settings, LogOut, Scissors, TrendingUp, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -52,10 +52,6 @@ export function AppSidebar() {
           </div>
           <div className="flex-1">
             <h2 className="font-bold text-lg text-gradient">BarberPro</h2>
-            <div className="flex items-center gap-2 mt-1">
-              {user?.role === 'owner' && <Crown className="w-3 h-3 text-primary" />}
-              <p className="text-xs text-muted-foreground font-medium">{user?.name}</p>
-            </div>
           </div>
         </div>
       </SidebarHeader>
@@ -96,7 +92,6 @@ export function AppSidebar() {
             <SidebarSeparator className="my-6" />
             <SidebarGroup>
               <SidebarGroupLabel className="text-orange-600 font-semibold mb-4 px-2 flex items-center gap-2">
-                <Crown className="w-4 h-4" />
                 Administração
               </SidebarGroupLabel>
               <SidebarGroupContent>

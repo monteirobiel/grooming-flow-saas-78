@@ -1,8 +1,7 @@
 
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Badge } from "@/components/ui/badge";
-import { Crown, User } from "lucide-react";
+import { User } from "lucide-react";
 
 export const Header = () => {
   const { user } = useAuth();
@@ -29,36 +28,15 @@ export const Header = () => {
       <div className="flex items-center gap-4">
         <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-accent/30 rounded-lg border border-border">
           <div className="w-8 h-8 bg-gradient-elegant rounded-full flex items-center justify-center">
-            {user?.role === 'owner' ? (
-              <Crown className="w-4 h-4 text-primary-foreground" />
-            ) : (
-              <User className="w-4 h-4 text-primary-foreground" />
-            )}
+            <User className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="text-right">
             <p className="text-sm font-semibold text-foreground">{user?.name}</p>
             <p className="text-xs text-muted-foreground">
-              {user?.role === 'owner' ? 'Proprietário' : 'Barbeiro'}
+              {user?.role === 'owner' ? 'Administrador' : 'Barbeiro'}
             </p>
           </div>
         </div>
-        
-        <Badge 
-          variant={user?.role === 'owner' ? 'default' : 'secondary'}
-          className={user?.role === 'owner' ? 'badge-premium' : 'bg-accent text-accent-foreground border-border'}
-        >
-          {user?.role === 'owner' ? (
-            <div className="flex items-center gap-1">
-              <Crown className="w-3 h-3" />
-              Dono
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <User className="w-3 h-3" />
-              Barbeiro
-            </div>
-          )}
-        </Badge>
       </div>
     </header>
   );
