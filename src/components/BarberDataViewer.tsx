@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { DollarSign, Calendar, Clock, TrendingUp, Eye } from "lucide-react";
+import { DollarSign, Calendar, Clock, TrendingUp, Eye, Crown, Shield } from "lucide-react";
+import { useBarbers } from "@/hooks/useBarbers";
 
 interface BarberDataViewerProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface BarberDataViewerProps {
 
 export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataViewerProps) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>("");
+  const { getAllAvailableBarbers } = useBarbers();
 
   // Buscar dados reais do barbeiro do localStorage
   const getBarberRealData = (barberId: string) => {
@@ -23,7 +25,9 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
       const appointments = JSON.parse(localStorage.getItem('appointments') || '[]');
       
       // Filtrar agendamentos do barbeiro específico
-      const barberAppointments = appointments.filter((apt: any) => apt.barberId === barberId);
+      const barberAppointments = appointments.filter((apt: any) => 
+        apt.barbeiro === getAllAvailableBarbers().find(b => b.id === barberId)?.name
+      );
       
       // Data atual
       const today = new Date();
@@ -35,30 +39,30 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
       
       // Agendamentos de hoje
       const todayAppointments = barberAppointments.filter((apt: any) => 
-        apt.date === todayString
+        apt.data === todayString
       );
       
       // Agendamentos concluídos de hoje
       const todayCompletedAppointments = todayAppointments.filter((apt: any) => 
-        apt.status === 'completed'
+        apt.status === 'concluido'
       );
       
       // Agendamentos do mês atual
       const currentMonthAppointments = barberAppointments.filter((apt: any) => {
-        const aptDate = new Date(apt.date);
+        const aptDate = new Date(apt.data);
         return aptDate.getMonth() === currentMonth && aptDate.getFullYear() === currentYear;
       });
       
       // Agendamentos concluídos do mês atual
       const currentMonthCompletedAppointments = currentMonthAppointments.filter((apt: any) => 
-        apt.status === 'completed'
+        apt.status === 'concluido'
       );
       
       // Calcular faturamento
       const calculateRevenue = (appointments: any[]) => {
         return appointments.reduce((total, apt) => {
-          if (apt.status === 'completed' && apt.price) {
-            return total + parseFloat(apt.price);
+          if (apt.status === 'concluido' && apt.valor) {
+            return total + parseFloat(apt.valor);
           }
           return total;
         }, 0);
@@ -69,15 +73,15 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
       
       // Agendamentos recentes (últimos 5)
       const recentAppointments = barberAppointments
-        .sort((a: any, b: any) => new Date(b.date + ' ' + b.time).getTime() - new Date(a.date + ' ' + a.time).getTime())
+        .sort((a: any, b: any) => new Date(b.data + ' ' + b.horario).getTime() - new Date(a.data + ' ' + a.horario).getTime())
         .slice(0, 5)
         .map((apt: any) => ({
           id: apt.id,
-          cliente: apt.clientName || 'Cliente não informado',
-          servico: apt.service || 'Serviço não informado',
-          horario: apt.time || '00:00',
-          valor: parseFloat(apt.price) || 0,
-          status: apt.status || 'pending'
+          cliente: apt.cliente || 'Cliente não informado',
+          servico: apt.servico || 'Serviço não informado',
+          horario: apt.horario || '00:00',
+          valor: parseFloat(apt.valor) || 0,
+          status: apt.status || 'pendente'
         }));
       
       return {
@@ -100,18 +104,20 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
     }
   };
 
-  const selectedBarber = barbeiros.find(b => b.id.toString() === selectedBarberId);
+  // Usar todos os barbeiros disponíveis (incluindo o dono)
+  const availableBarbers = getAllAvailableBarbers();
+  const selectedBarber = availableBarbers.find(b => b.id.toString() === selectedBarberId);
   const barberData = selectedBarberId ? getBarberRealData(selectedBarberId) : null;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed':
+      case 'confirmado':
         return 'bg-primary text-primary-foreground';
-      case 'completed':
+      case 'concluido':
         return 'bg-green-500 text-white';
-      case 'pending':
+      case 'pendente':
         return 'bg-yellow-500 text-black';
-      case 'cancelled':
+      case 'cancelado':
         return 'bg-red-500 text-white';
       default:
         return 'bg-muted text-muted-foreground';
@@ -120,17 +126,35 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'confirmed':
+      case 'confirmado':
         return 'Confirmado';
-      case 'completed':
+      case 'concluido':
         return 'Concluído';
-      case 'pending':
+      case 'pendente':
         return 'Pendente';
-      case 'cancelled':
+      case 'cancelado':
         return 'Cancelado';
       default:
         return 'Desconhecido';
     }
+  };
+
+  const getBarberIcon = (barber: any) => {
+    if (barber.role === 'owner') {
+      return <Shield className="w-5 h-5 text-purple-600" />;
+    } else if (barber.position === 'administrador') {
+      return <Crown className="w-5 h-5 text-primary" />;
+    }
+    return null;
+  };
+
+  const getBarberLabel = (barber: any) => {
+    if (barber.role === 'owner') {
+      return 'Gerente/Proprietário';
+    } else if (barber.position === 'administrador') {
+      return 'Administrador';
+    }
+    return 'Funcionário';
   };
 
   return (
@@ -149,16 +173,20 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
             <label className="text-sm font-medium mb-2 block">Selecionar Barbeiro</label>
             <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
               <SelectTrigger>
-                <SelectValue placeholder="Escolha um barbeiro funcionário" />
+                <SelectValue placeholder="Escolha um barbeiro" />
               </SelectTrigger>
               <SelectContent>
-                {barbeiros
-                  .filter(b => b.position === 'funcionario')
-                  .map((barbeiro) => (
-                    <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
-                      {barbeiro.name}
-                    </SelectItem>
-                  ))}
+                {availableBarbers.map((barbeiro) => (
+                  <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      {getBarberIcon(barbeiro)}
+                      <span>{barbeiro.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({getBarberLabel(barbeiro)})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -167,15 +195,35 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
           {selectedBarber && barberData && (
             <>
               {/* Header do Barbeiro */}
-              <Card className="border-primary">
+              <Card className={`border-primary ${selectedBarber.role === 'owner' ? 'bg-gradient-to-r from-purple-500/5 to-transparent' : ''}`}>
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold">{selectedBarber.name}</h3>
-                      <p className="text-muted-foreground">{selectedBarber.email}</p>
-                      <p className="text-sm text-primary">{selectedBarber.specialty || 'Especialidade não informada'}</p>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                        selectedBarber.role === 'owner' 
+                          ? 'bg-purple-500/10' 
+                          : selectedBarber.position === 'administrador' 
+                            ? 'bg-primary/10' 
+                            : 'bg-blue-500/10'
+                      }`}>
+                        {getBarberIcon(selectedBarber) || <Eye className="w-6 h-6 text-blue-600" />}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">{selectedBarber.name}</h3>
+                        <p className="text-muted-foreground">{selectedBarber.email}</p>
+                        <p className="text-sm text-primary">{selectedBarber.specialty || 'Especialidade não informada'}</p>
+                      </div>
                     </div>
-                    <Badge variant="secondary">Funcionário</Badge>
+                    <Badge variant="secondary" className={
+                      selectedBarber.role === 'owner' 
+                        ? 'bg-purple-500/10 text-purple-600 border-purple-500/20' 
+                        : selectedBarber.position === 'administrador'
+                          ? 'bg-primary/10 text-primary border-primary/20'
+                          : 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                    }>
+                      {getBarberIcon(selectedBarber)}
+                      <span className="ml-1">{getBarberLabel(selectedBarber)}</span>
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>
