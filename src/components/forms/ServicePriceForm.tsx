@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Edit, Trash } from "lucide-react";
+import { useServices } from "@/hooks/useServices";
 
 interface ServicePriceFormProps {
   open: boolean;
@@ -14,14 +15,7 @@ interface ServicePriceFormProps {
 }
 
 export const ServicePriceForm = ({ open, onOpenChange }: ServicePriceFormProps) => {
-  const [servicos, setServicos] = useState([
-    { id: 1, nome: "Corte", preco: 30.00 },
-    { id: 2, nome: "Barba", preco: 25.00 },
-    { id: 3, nome: "Corte + Barba", preco: 45.00 },
-    { id: 4, nome: "Sobrancelha", preco: 15.00 },
-    { id: 5, nome: "Lavagem", preco: 20.00 }
-  ]);
-
+  const { services, addService, updateService, deleteService } = useServices();
   const [novoServico, setNovoServico] = useState({ nome: "", preco: 0 });
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -36,26 +30,21 @@ export const ServicePriceForm = ({ open, onOpenChange }: ServicePriceFormProps) 
     }
 
     if (editingId) {
-      setServicos(prev => prev.map(s => 
-        s.id === editingId 
-          ? { ...s, nome: novoServico.nome, preco: novoServico.preco }
-          : s
-      ));
+      updateService(editingId, { nome: novoServico.nome, preco: novoServico.preco });
       setEditingId(null);
+      toast({
+        title: "Sucesso!",
+        description: "Serviço atualizado!"
+      });
     } else {
-      const newService = {
-        id: Date.now(),
-        nome: novoServico.nome,
-        preco: novoServico.preco
-      };
-      setServicos(prev => [...prev, newService]);
+      addService({ nome: novoServico.nome, preco: novoServico.preco });
+      toast({
+        title: "Sucesso!",
+        description: "Serviço adicionado!"
+      });
     }
 
     setNovoServico({ nome: "", preco: 0 });
-    toast({
-      title: "Sucesso!",
-      description: editingId ? "Serviço atualizado!" : "Serviço adicionado!"
-    });
   };
 
   const handleEditService = (servico: any) => {
@@ -65,7 +54,7 @@ export const ServicePriceForm = ({ open, onOpenChange }: ServicePriceFormProps) 
 
   const handleDeleteService = (id: number) => {
     if (confirm("Tem certeza que deseja remover este serviço?")) {
-      setServicos(prev => prev.filter(s => s.id !== id));
+      deleteService(id);
       toast({
         title: "Serviço removido",
         description: "O serviço foi removido com sucesso"
@@ -136,7 +125,7 @@ export const ServicePriceForm = ({ open, onOpenChange }: ServicePriceFormProps) 
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {servicos.map((servico) => (
+                {services.map((servico) => (
                   <div key={servico.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <p className="font-medium">{servico.nome}</p>

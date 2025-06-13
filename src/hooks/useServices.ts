@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface Service {
   id: number;
@@ -16,7 +16,23 @@ const initialServices: Service[] = [
 ];
 
 export const useServices = () => {
-  const [services, setServices] = useState<Service[]>(initialServices);
+  const [services, setServices] = useState<Service[]>(() => {
+    const savedServices = localStorage.getItem('barbershop-services');
+    if (savedServices) {
+      return JSON.parse(savedServices);
+    }
+    return initialServices;
+  });
+
+  // Salvar no localStorage sempre que os serviços mudarem
+  useEffect(() => {
+    localStorage.setItem('barbershop-services', JSON.stringify(services));
+    
+    // Disparar evento para notificar outros componentes
+    window.dispatchEvent(new CustomEvent('servicesUpdated', { 
+      detail: { services } 
+    }));
+  }, [services]);
 
   const getServicePrice = (serviceName: string): number => {
     const service = services.find(s => s.nome === serviceName);
@@ -27,10 +43,31 @@ export const useServices = () => {
     return services.map(s => s.nome);
   };
 
+  const addService = (service: Omit<Service, 'id'>): void => {
+    const newService = {
+      ...service,
+      id: Date.now()
+    };
+    setServices(prev => [...prev, newService]);
+  };
+
+  const updateService = (id: number, updatedService: Omit<Service, 'id'>): void => {
+    setServices(prev => prev.map(s => 
+      s.id === id ? { ...updatedService, id } : s
+    ));
+  };
+
+  const deleteService = (id: number): void => {
+    setServices(prev => prev.filter(s => s.id !== id));
+  };
+
   return {
     services,
     setServices,
     getServicePrice,
-    getServiceNames
+    getServiceNames,
+    addService,
+    updateService,
+    deleteService
   };
 };
