@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,18 +11,21 @@ interface BarberDataViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   barbeiros: any[];
+  preSelectedBarberId?: string | null;
 }
 
-export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataViewerProps) => {
+export const BarberDataViewer = ({ open, onOpenChange, barbeiros, preSelectedBarberId }: BarberDataViewerProps) => {
   const [selectedBarberId, setSelectedBarberId] = useState<string>("");
   const { getAllAvailableBarbers } = useBarbers();
 
-  // Resetar seleção quando o dialog é fechado
+  // Resetar seleção quando o dialog é fechado ou definir barbeiro pré-selecionado
   useEffect(() => {
     if (!open) {
       setSelectedBarberId("");
+    } else if (preSelectedBarberId) {
+      setSelectedBarberId(preSelectedBarberId);
     }
-  }, [open]);
+  }, [open, preSelectedBarberId]);
 
   // Buscar dados reais do barbeiro do localStorage
   const getBarberRealData = (barberId: string) => {
@@ -176,28 +178,30 @@ export const BarberDataViewer = ({ open, onOpenChange, barbeiros }: BarberDataVi
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Seletor de Barbeiro */}
-          <div>
-            <label className="text-sm font-medium mb-2 block">Selecionar Barbeiro</label>
-            <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Escolha um barbeiro" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableBarbers.map((barbeiro) => (
-                  <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
-                    <div className="flex items-center gap-2">
-                      {getBarberIcon(barbeiro)}
-                      <span>{barbeiro.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({getBarberLabel(barbeiro)})
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Seletor de Barbeiro - só aparece se não há barbeiro pré-selecionado */}
+          {!preSelectedBarberId && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">Selecionar Barbeiro</label>
+              <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Escolha um barbeiro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableBarbers.map((barbeiro) => (
+                    <SelectItem key={barbeiro.id} value={barbeiro.id.toString()}>
+                      <div className="flex items-center gap-2">
+                        {getBarberIcon(barbeiro)}
+                        <span>{barbeiro.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({getBarberLabel(barbeiro)})
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Dados do Barbeiro Selecionado */}
           {selectedBarber && barberData && (

@@ -27,6 +27,7 @@ const Barbers = () => {
   const [editingBarber, setEditingBarber] = useState<any>(null);
   const [barbeiros, setBarbeiros] = useState<any[]>([]);
   const [barberToDelete, setBarberToDelete] = useState<any>(null);
+  const [selectedBarberForViewer, setSelectedBarberForViewer] = useState<string | null>(null);
 
   // Carregar barbeiros do contexto de autenticação
   useEffect(() => {
@@ -141,6 +142,16 @@ const Barbers = () => {
         });
       }
     }
+  };
+
+  const handleViewBarberData = (barberId: string) => {
+    setSelectedBarberForViewer(barberId);
+    setShowBarberDataViewer(true);
+  };
+
+  const handleCloseBarberDataViewer = () => {
+    setSelectedBarberForViewer(null);
+    setShowBarberDataViewer(false);
   };
 
   // Verificar se o usuário tem permissão para acessar esta página
@@ -332,6 +343,14 @@ const Barbers = () => {
                             <Crown className="w-3 h-3 mr-1" />
                             Administrador
                           </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleViewBarberData(barbeiro.id)}
+                            className="hover:bg-primary/10"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <Switch
                             checked={barbeiro.status === 'active'}
                             onCheckedChange={() => handleToggleBarberStatus(barbeiro.id)}
@@ -411,7 +430,7 @@ const Barbers = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => setShowBarberDataViewer(true)}
+                            onClick={() => handleViewBarberData(barbeiro.id)}
                             className="hover:bg-primary/10"
                           >
                             <Eye className="w-4 h-4" />
@@ -491,8 +510,9 @@ const Barbers = () => {
 
       <BarberDataViewer
         open={showBarberDataViewer}
-        onOpenChange={setShowBarberDataViewer}
+        onOpenChange={handleCloseBarberDataViewer}
         barbeiros={barbeiros}
+        preSelectedBarberId={selectedBarberForViewer}
       />
     </div>
   );
