@@ -391,7 +391,7 @@ const Dashboard = () => {
             <Card className="card-modern border-primary bg-gradient-to-br from-primary/10 to-primary/5">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-primary">
-                  Meu Repasse
+                  Meu Faturamento
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-primary" />
               </CardHeader>
