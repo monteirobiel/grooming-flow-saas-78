@@ -136,7 +136,22 @@ const Dashboard = () => {
       console.log('💰 Calculando faturamento de hoje - apenas concluídos:', todayCompletedAppointments);
       
       const bruto = todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
-      const liquido = bruto * (100 - comissaoPercentual) / 100;
+      
+      // Calcular líquido considerando se o barbeiro é o dono
+      const liquido = todayCompletedAppointments.reduce((total, ag) => {
+        const valor = ag.valor || 0;
+        
+        // Se o barbeiro é o dono/proprietário, não aplica comissão
+        if (ag.barbeiro === user?.name && user?.role === 'owner') {
+          console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
+          return total + valor;
+        }
+        
+        // Para outros barbeiros, aplica a comissão
+        const valorLiquido = valor * (100 - comissaoPercentual) / 100;
+        console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
+        return total + valorLiquido;
+      }, 0);
 
       return { bruto, liquido };
     }
@@ -152,7 +167,22 @@ const Dashboard = () => {
     console.log('💰 Calculando faturamento do período - apenas concluídos:', periodCompletedAppointments);
     
     const bruto = periodCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
-    const liquido = bruto * (100 - comissaoPercentual) / 100;
+    
+    // Calcular líquido considerando se o barbeiro é o dono
+    const liquido = periodCompletedAppointments.reduce((total, ag) => {
+      const valor = ag.valor || 0;
+      
+      // Se o barbeiro é o dono/proprietário, não aplica comissão
+      if (ag.barbeiro === user?.name && user?.role === 'owner') {
+        console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
+        return total + valor;
+      }
+      
+      // Para outros barbeiros, aplica a comissão
+      const valorLiquido = valor * (100 - comissaoPercentual) / 100;
+      console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
+      return total + valorLiquido;
+    }, 0);
 
     return { bruto, liquido };
   };
