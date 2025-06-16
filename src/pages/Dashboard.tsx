@@ -141,8 +141,8 @@ const Dashboard = () => {
       const liquido = todayCompletedAppointments.reduce((total, ag) => {
         const valor = ag.valor || 0;
         
-        // Se o barbeiro é o dono/proprietário, não aplica comissão
-        if (ag.barbeiro === user?.name && user?.role === 'owner') {
+        // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
+        if (ag.barbeiro === 'Dono da Barbearia') {
           console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
           return total + valor;
         }
@@ -172,8 +172,8 @@ const Dashboard = () => {
     const liquido = periodCompletedAppointments.reduce((total, ag) => {
       const valor = ag.valor || 0;
       
-      // Se o barbeiro é o dono/proprietário, não aplica comissão
-      if (ag.barbeiro === user?.name && user?.role === 'owner') {
+      // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
+      if (ag.barbeiro === 'Dono da Barbearia') {
         console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
         return total + valor;
       }
