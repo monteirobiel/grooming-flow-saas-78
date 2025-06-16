@@ -137,26 +137,39 @@ const Dashboard = () => {
       
       const bruto = todayCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
       
-      // Calcular líquido considerando se o barbeiro é o dono
-      const liquido = todayCompletedAppointments.reduce((total, ag) => {
-        const valor = ag.valor || 0;
-        
-        // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
-        if (ag.barbeiro === 'Dono da Barbearia') {
-          console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
-          return total + valor;
-        }
-        
-        // Para outros barbeiros, aplica a comissão
-        const valorLiquido = valor * (100 - comissaoPercentual) / 100;
-        console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
-        return total + valorLiquido;
-      }, 0);
+      // Calcular líquido baseado no tipo de usuário
+      let liquido = 0;
+      
+      if (isBarberEmployee) {
+        // Para barbeiros funcionários: apenas o valor de repasse dos SEUS serviços
+        liquido = todayCompletedAppointments.reduce((total, ag) => {
+          const valor = ag.valor || 0;
+          const valorRepasse = valor * comissaoPercentual / 100; // Repasse do funcionário
+          console.log(`💼 Repasse do funcionário ${ag.barbeiro}: R$ ${valor} -> R$ ${valorRepasse} (${comissaoPercentual}% repasse)`);
+          return total + valorRepasse;
+        }, 0);
+      } else {
+        // Para donos/administradores: valor líquido da barbearia
+        liquido = todayCompletedAppointments.reduce((total, ag) => {
+          const valor = ag.valor || 0;
+          
+          // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
+          if (ag.barbeiro === 'Dono da Barbearia') {
+            console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
+            return total + valor;
+          }
+          
+          // Para outros barbeiros, aplica a comissão (barbearia fica com a diferença)
+          const valorLiquido = valor * (100 - comissaoPercentual) / 100;
+          console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
+          return total + valorLiquido;
+        }, 0);
+      }
 
       return { bruto, liquido };
     }
 
-    // Filtrar agendamentos do período selecionado - APENSA CONCLUÍDOS
+    // Filtrar agendamentos do período selecionado - APENAS CONCLUÍDOS
     const periodAppointments = filteredAgendamentos.filter(ag => {
       const appointmentDate = new Date(ag.data);
       return appointmentDate >= startDate && appointmentDate <= endDate;
@@ -168,21 +181,34 @@ const Dashboard = () => {
     
     const bruto = periodCompletedAppointments.reduce((total, ag) => total + (ag.valor || 0), 0);
     
-    // Calcular líquido considerando se o barbeiro é o dono
-    const liquido = periodCompletedAppointments.reduce((total, ag) => {
-      const valor = ag.valor || 0;
-      
-      // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
-      if (ag.barbeiro === 'Dono da Barbearia') {
-        console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
-        return total + valor;
-      }
-      
-      // Para outros barbeiros, aplica a comissão
-      const valorLiquido = valor * (100 - comissaoPercentual) / 100;
-      console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
-      return total + valorLiquido;
-    }, 0);
+    // Calcular líquido baseado no tipo de usuário
+    let liquido = 0;
+    
+    if (isBarberEmployee) {
+      // Para barbeiros funcionários: apenas o valor de repasse dos SEUS serviços
+      liquido = periodCompletedAppointments.reduce((total, ag) => {
+        const valor = ag.valor || 0;
+        const valorRepasse = valor * comissaoPercentual / 100; // Repasse do funcionário
+        console.log(`💼 Repasse do funcionário ${ag.barbeiro}: R$ ${valor} -> R$ ${valorRepasse} (${comissaoPercentual}% repasse)`);
+        return total + valorRepasse;
+      }, 0);
+    } else {
+      // Para donos/administradores: valor líquido da barbearia
+      liquido = periodCompletedAppointments.reduce((total, ag) => {
+        const valor = ag.valor || 0;
+        
+        // Verificar se o barbeiro do agendamento é "Dono da Barbearia"
+        if (ag.barbeiro === 'Dono da Barbearia') {
+          console.log(`💼 Serviço do proprietário ${ag.barbeiro}: R$ ${valor} (sem comissão)`);
+          return total + valor;
+        }
+        
+        // Para outros barbeiros, aplica a comissão (barbearia fica com a diferença)
+        const valorLiquido = valor * (100 - comissaoPercentual) / 100;
+        console.log(`🔄 Serviço de ${ag.barbeiro}: R$ ${valor} -> R$ ${valorLiquido} (${comissaoPercentual}% comissão)`);
+        return total + valorLiquido;
+      }, 0);
+    }
 
     return { bruto, liquido };
   };
@@ -300,119 +326,160 @@ const Dashboard = () => {
         </Card>
       )}
 
-      {/* Filtro de Data para Faturamento */}
-      <Card className="card-modern">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">Filtrar por Período</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dateRange.from && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.from ? (
-                  dateRange.to ? (
-                    <>
-                      {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
-                    </>
+      {/* Filtro de Data para Faturamento - Apenas para donos e administradores */}
+      {!isBarberEmployee && (
+        <Card className="card-modern">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Filtrar por Período</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !dateRange.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "dd/MM/yyyy")
+                    )
                   ) : (
-                    format(dateRange.from, "dd/MM/yyyy")
-                  )
-                ) : (
-                  <span>Selecionar período</span>
-                )}
+                    <span>Selecionar período</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  initialFocus
+                  mode="range"
+                  defaultMonth={new Date()}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={1}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            {dateRange.from && dateRange.to && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setDateRange({ from: undefined, to: undefined })}
+                className="mt-2 w-full"
+              >
+                Limpar Filtro
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <CalendarComponent
-                initialFocus
-                mode="range"
-                defaultMonth={new Date()}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={1}
-                className={cn("p-3 pointer-events-auto")}
-              />
-            </PopoverContent>
-          </Popover>
-          {dateRange.from && dateRange.to && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setDateRange({ from: undefined, to: undefined })}
-              className="mt-2 w-full"
-            >
-              Limpar Filtro
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Métricas Principais - Reorganizadas */}
+      {/* Métricas Principais - Diferentes para funcionários */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {/* Faturamento Bruto - Destacado */}
-        <Card className="card-modern border-primary bg-gradient-to-br from-primary/10 to-primary/5">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-primary">
-              {isBarberEmployee ? 'Meu Faturamento Bruto' : 'Faturamento Bruto'}
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              R$ {dashboardData.faturamentoBruto.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dateRange.from && dateRange.to 
-                ? `período selecionado` 
-                : 'apenas serviços concluídos hoje'
-              }
-            </p>
-          </CardContent>
-        </Card>
+        {/* Para funcionários: apenas faturamento líquido (repasse) */}
+        {isBarberEmployee ? (
+          <>
+            {/* Faturamento Líquido (Repasse) - Para Funcionários */}
+            <Card className="card-modern border-primary bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-primary">
+                  Meu Repasse
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  R$ {dashboardData.faturamentoLiquido.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {comissaoPercentual}% dos meus serviços concluídos hoje
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Faturamento Líquido - Ao lado */}
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isBarberEmployee ? 'Meu Faturamento Líquido' : 'Faturamento Líquido'}
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              R$ {dashboardData.faturamentoLiquido.toFixed(2)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {dateRange.from && dateRange.to 
-                ? `período selecionado (${comissaoPercentual}% comissão)` 
-                : `serviços realizados (${comissaoPercentual}% comissão)`
-              }
-            </p>
-          </CardContent>
-        </Card>
+            {/* Agendamentos Hoje */}
+            <Card className="card-modern">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Meus Agendamentos Hoje
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dashboardData.agendamentosHoje}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardData.agendamentosPendentes} pendentes
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <>
+            {/* Para donos/administradores: faturamento bruto e líquido */}
+            <Card className="card-modern border-primary bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-primary">
+                  Faturamento Bruto
+                </CardTitle>
+                <DollarSign className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  R$ {dashboardData.faturamentoBruto.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {dateRange.from && dateRange.to 
+                    ? `período selecionado` 
+                    : 'apenas serviços concluídos hoje'
+                  }
+                </p>
+              </CardContent>
+            </Card>
 
-        {/* Agendamentos Hoje */}
-        <Card className="card-modern">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {isBarberEmployee ? 'Meus Agendamentos Hoje' : 'Agendamentos Hoje'}
-            </CardTitle>
-            <Calendar className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.agendamentosHoje}</div>
-            <p className="text-xs text-muted-foreground">
-              {dashboardData.agendamentosPendentes} pendentes
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="card-modern">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Faturamento Líquido
+                </CardTitle>
+                <TrendingUp className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-success">
+                  R$ {dashboardData.faturamentoLiquido.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {dateRange.from && dateRange.to 
+                    ? `período selecionado (${comissaoPercentual}% comissão)` 
+                    : `serviços realizados (${comissaoPercentual}% comissão)`
+                  }
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="card-modern">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Agendamentos Hoje
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{dashboardData.agendamentosHoje}</div>
+                <p className="text-xs text-muted-foreground">
+                  {dashboardData.agendamentosPendentes} pendentes
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
