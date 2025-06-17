@@ -2,7 +2,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { User } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export const Header = () => {
   const { user } = useAuth();
@@ -27,7 +26,6 @@ export const Header = () => {
       </div>
       
       <div className="flex items-center gap-4">
-        <ThemeToggle />
         <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-accent/30 rounded-lg border border-border">
           <div className="w-8 h-8 bg-gradient-elegant rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-primary-foreground" />
