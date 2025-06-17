@@ -8,11 +8,23 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useServices } from "@/hooks/useServices";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const ServiceManagement = () => {
   const { services, addService, updateService, deleteService } = useServices();
   const [newService, setNewService] = useState({ nome: "", preco: 0 });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [serviceToDelete, setServiceToDelete] = useState<{ id: number; name: string } | null>(null);
 
   const handleAddService = () => {
     if (!newService.nome.trim() || newService.preco <= 0) {
@@ -70,14 +82,15 @@ export const ServiceManagement = () => {
     setEditingId(service.id);
   };
 
-  const handleDeleteService = (id: number, serviceName: string) => {
-    if (confirm(`Tem certeza que deseja remover o serviço "${serviceName}"?`)) {
+  const confirmDeleteService = () => {
+    if (serviceToDelete) {
       try {
-        deleteService(id);
+        deleteService(serviceToDelete.id);
         toast({
           title: "Serviço removido",
-          description: `O serviço "${serviceName}" foi removido com sucesso`
+          description: `O serviço "${serviceToDelete.name}" foi removido com sucesso`
         });
+        setServiceToDelete(null);
       } catch (error) {
         toast({
           title: "Erro",
@@ -173,15 +186,41 @@ export const ServiceManagement = () => {
                       <Edit className="w-4 h-4" />
                       Editar
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="destructive"
-                      onClick={() => handleDeleteService(service.id, service.nome)}
-                      className="flex items-center gap-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Remover
-                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          className="flex items-center gap-1"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Remover
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja remover o serviço <strong>"{service.nome}"</strong>?
+                            <br />
+                            Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              setServiceToDelete({ id: service.id, name: service.nome });
+                              confirmDeleteService();
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Remover Serviço
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               ))}
