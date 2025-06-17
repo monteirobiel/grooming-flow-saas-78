@@ -11,6 +11,7 @@ import Appointments from "./pages/Appointments";
 import Products from "./pages/Products";
 import Settings from "./pages/Settings";
 import Barbers from "./pages/Barbers";
+import Management from "./pages/Management";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";

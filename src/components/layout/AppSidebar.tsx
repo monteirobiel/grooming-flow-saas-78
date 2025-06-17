@@ -1,5 +1,5 @@
 
-import { Calendar, ShoppingBag, Settings, LogOut, Scissors, TrendingUp, Users } from "lucide-react";
+import { Calendar, ShoppingBag, Settings, LogOut, Scissors, TrendingUp, Users, Cog } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -111,6 +111,24 @@ export function AppSidebar() {
                           location.pathname === '/barbeiros' ? 'text-orange-600' : ''
                         }`} />
                         <span className="font-medium">Barbeiros</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton 
+                      asChild
+                      isActive={location.pathname === '/gestao'}
+                      className={`nav-item group w-full justify-start text-left transition-all duration-200 ${
+                        location.pathname === '/gestao' 
+                          ? 'active bg-gradient-to-r from-orange-500/20 to-orange-500/10 text-orange-600 border-r-2 border-orange-500' 
+                          : 'hover:bg-orange-500/10 hover:text-orange-600'
+                      }`}
+                    >
+                      <Link to="/gestao" className="flex items-center gap-3 w-full">
+                        <Cog className={`w-5 h-5 nav-icon transition-colors ${
+                          location.pathname === '/gestao' ? 'text-orange-600' : ''
+                        }`} />
+                        <span className="font-medium">Gestão</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
