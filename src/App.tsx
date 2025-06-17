@@ -55,6 +55,13 @@ const App = () => (
                 </AppLayout>
               </SidebarProvider>
             } />
+            <Route path="/gestao" element={
+              <SidebarProvider>
+                <AppLayout>
+                  <Management />
+                </AppLayout>
+              </SidebarProvider>
+            } />
             <Route path="/configuracoes" element={
               <SidebarProvider>
                 <AppLayout>

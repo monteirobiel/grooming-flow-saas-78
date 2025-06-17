@@ -9,8 +9,12 @@ import { CommissionSettings } from "@/components/management/CommissionSettings";
 const Management = () => {
   const { user } = useAuth();
 
+  console.log('🏗️ Management - renderizando página de gestão');
+  console.log('👤 Management - usuário logado:', user);
+
   // Apenas donos têm acesso a esta página
   if (user?.role !== 'owner') {
+    console.log('❌ Management - acesso negado para usuário:', user?.role);
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md text-center">
@@ -25,8 +29,10 @@ const Management = () => {
     );
   }
 
+  console.log('✅ Management - acesso liberado para owner');
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="container mx-auto p-6 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-6">
         <Settings className="w-8 h-8 text-primary" />
         <div>
