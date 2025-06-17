@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, List } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useServices } from "@/hooks/useServices";
 import {
@@ -28,14 +28,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export const ServiceManagement = () => {
   const { services, addService, updateService, deleteService } = useServices();
   const [newService, setNewService] = useState({ nome: "", preco: 0 });
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [serviceToDelete, setServiceToDelete] = useState<{ id: number; name: string } | null>(null);
   const [serviceToEdit, setServiceToEdit] = useState<{ id: number; nome: string; preco: number } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [servicesListOpen, setServicesListOpen] = useState(false);
 
   const handleAddService = () => {
     if (!newService.nome.trim() || newService.preco <= 0) {
@@ -49,8 +56,7 @@ export const ServiceManagement = () => {
 
     // Verificar se já existe um serviço com o mesmo nome
     const serviceExists = services.some(s => 
-      s.nome.toLowerCase() === newService.nome.toLowerCase() && 
-      (editingId === null || s.id !== editingId)
+      s.nome.toLowerCase() === newService.nome.toLowerCase()
     );
 
     if (serviceExists) {
@@ -63,21 +69,11 @@ export const ServiceManagement = () => {
     }
 
     try {
-      if (editingId) {
-        updateService(editingId, { nome: newService.nome.trim(), preco: newService.preco });
-        setEditingId(null);
-        toast({
-          title: "Sucesso!",
-          description: "Serviço atualizado com sucesso!"
-        });
-      } else {
-        addService({ nome: newService.nome.trim(), preco: newService.preco });
-        toast({
-          title: "Sucesso!",
-          description: "Novo serviço adicionado com sucesso!"
-        });
-      }
-
+      addService({ nome: newService.nome.trim(), preco: newService.preco });
+      toast({
+        title: "Sucesso!",
+        description: "Novo serviço adicionado com sucesso!"
+      });
       setNewService({ nome: "", preco: 0 });
     } catch (error) {
       toast({
@@ -137,38 +133,30 @@ export const ServiceManagement = () => {
     }
   };
 
-  const confirmDeleteService = () => {
-    if (serviceToDelete) {
-      try {
-        deleteService(serviceToDelete.id);
-        toast({
-          title: "Serviço removido",
-          description: `O serviço "${serviceToDelete.name}" foi removido com sucesso`
-        });
-        setServiceToDelete(null);
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao remover o serviço",
-          variant: "destructive"
-        });
-      }
+  const confirmDeleteService = (serviceId: number, serviceName: string) => {
+    try {
+      deleteService(serviceId);
+      toast({
+        title: "Serviço removido",
+        description: `O serviço "${serviceName}" foi removido com sucesso`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao remover o serviço",
+        variant: "destructive"
+      });
     }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setNewService({ nome: "", preco: 0 });
   };
 
   return (
     <div className="space-y-6">
-      {/* Formulário para adicionar/editar serviços */}
+      {/* Formulário para adicionar serviços */}
       <Card className="card-modern">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-primary" />
-            {editingId ? "Editar Serviço" : "Adicionar Novo Serviço"}
+            Adicionar Novo Serviço
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -198,20 +186,13 @@ export const ServiceManagement = () => {
             </div>
           </div>
           
-          <div className="flex gap-3">
-            <Button onClick={handleAddService} className="flex-1">
-              {editingId ? "Atualizar Serviço" : "Adicionar Serviço"}
-            </Button>
-            {editingId && (
-              <Button variant="outline" onClick={cancelEdit}>
-                Cancelar
-              </Button>
-            )}
-          </div>
+          <Button onClick={handleAddService} className="w-full">
+            Adicionar Serviço
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Lista de serviços cadastrados */}
+      {/* Botão para visualizar serviços cadastrados */}
       <Card className="card-modern">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
@@ -220,126 +201,171 @@ export const ServiceManagement = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {services.length > 0 ? (
-            <div className="space-y-3">
-              {services.map((service) => (
-                <div key={service.id} className="flex items-center justify-between p-4 bg-muted rounded-lg border">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-lg">{service.nome}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <DollarSign className="w-4 h-4 text-success" />
-                      <span className="text-success font-bold">R$ {service.preco.toFixed(2)}</span>
-                    </div>
+          <div className="text-center py-6">
+            <Dialog open={servicesListOpen} onOpenChange={setServicesListOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline"
+                  className="hover:bg-primary/10"
+                  disabled={services.length === 0}
+                >
+                  <List className="w-4 h-4 mr-2" />
+                  Visualizar Serviços Cadastrados
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Serviços Cadastrados</DialogTitle>
+                  <DialogDescription>
+                    Gerencie todos os serviços da sua barbearia
+                  </DialogDescription>
+                </DialogHeader>
+                
+                {services.length > 0 ? (
+                  <div className="mt-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome do Serviço</TableHead>
+                          <TableHead>Preço</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {services.map((service) => (
+                          <TableRow key={service.id}>
+                            <TableCell className="font-medium">{service.nome}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <DollarSign className="w-4 h-4 text-success" />
+                                <span className="text-success font-bold">R$ {service.preco.toFixed(2)}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-2 justify-end">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleEditService(service)}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                  Editar
+                                </Button>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      size="sm" 
+                                      variant="destructive"
+                                      className="flex items-center gap-1"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Remover
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Tem certeza que deseja remover o serviço <strong>"{service.nome}"</strong>?
+                                        <br />
+                                        Esta ação não pode ser desfeita.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => confirmDeleteService(service.id, service.nome)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Remover Serviço
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                  <div className="flex gap-2">
-                    <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleEditService(service)}
-                          className="flex items-center gap-1"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Editar
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                          <DialogTitle>Editar Serviço</DialogTitle>
-                          <DialogDescription>
-                            Faça as alterações necessárias no serviço selecionado.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-service-name">Nome do Serviço</Label>
-                            <Input
-                              id="edit-service-name"
-                              value={serviceToEdit?.nome || ""}
-                              onChange={(e) => setServiceToEdit(prev => 
-                                prev ? { ...prev, nome: e.target.value } : null
-                              )}
-                              placeholder="Nome do serviço"
-                            />
-                          </div>
-                          <div className="grid gap-2">
-                            <Label htmlFor="edit-service-price">Preço (R$)</Label>
-                            <Input
-                              id="edit-service-price"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={serviceToEdit?.preco || ""}
-                              onChange={(e) => setServiceToEdit(prev => 
-                                prev ? { ...prev, preco: parseFloat(e.target.value) || 0 } : null
-                              )}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-                            Cancelar
-                          </Button>
-                          <Button onClick={confirmEditService}>
-                            Salvar Alterações
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="destructive"
-                          className="flex items-center gap-1"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Remover
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Confirmar Remoção</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja remover o serviço <strong>"{service.nome}"</strong>?
-                            <br />
-                            Esta ação não pode ser desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => {
-                              setServiceToDelete({ id: service.id, name: service.nome });
-                              confirmDeleteService();
-                            }}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Remover Serviço
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                ) : (
+                  <div className="text-center py-8">
+                    <Plus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      Nenhum serviço cadastrado ainda
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Adicione novos serviços usando o formulário acima
+                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Plus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
-                Nenhum serviço cadastrado ainda
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Adicione novos serviços usando o formulário acima
-              </p>
-            </div>
-          )}
+                )}
+              </DialogContent>
+            </Dialog>
+            
+            {services.length === 0 && (
+              <div className="mt-4">
+                <Plus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  Nenhum serviço cadastrado ainda
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Adicione novos serviços usando o formulário acima
+                </p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Modal para editar serviços */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Editar Serviço</DialogTitle>
+            <DialogDescription>
+              Faça as alterações necessárias no serviço selecionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-service-name">Nome do Serviço</Label>
+              <Input
+                id="edit-service-name"
+                value={serviceToEdit?.nome || ""}
+                onChange={(e) => setServiceToEdit(prev => 
+                  prev ? { ...prev, nome: e.target.value } : null
+                )}
+                placeholder="Nome do serviço"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-service-price">Preço (R$)</Label>
+              <Input
+                id="edit-service-price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={serviceToEdit?.preco || ""}
+                onChange={(e) => setServiceToEdit(prev => 
+                  prev ? { ...prev, preco: parseFloat(e.target.value) || 0 } : null
+                )}
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmEditService}>
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
