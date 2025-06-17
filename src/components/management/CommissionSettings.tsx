@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { Percent, DollarSign, Info } from "lucide-react";
+import { Percent, DollarSign } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export const CommissionSettings = () => {
@@ -72,21 +72,6 @@ export const CommissionSettings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-blue-900 mb-1">Como funciona o repasse:</p>
-                <ul className="text-blue-800 space-y-1 list-disc list-inside">
-                  <li>O barbeiro recebe a porcentagem definida do valor do serviço</li>
-                  <li>A barbearia fica com o restante do valor</li>
-                  <li>No dashboard do barbeiro aparece apenas o valor do repasse</li>
-                  <li>No dashboard do dono aparece o faturamento bruto e líquido</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-3">
