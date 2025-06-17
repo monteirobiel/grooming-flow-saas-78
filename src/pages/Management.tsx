@@ -44,16 +44,24 @@ const Management = () => {
       </div>
 
       <Tabs defaultValue="services" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="services" className="flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Gestão de Serviços
-          </TabsTrigger>
-          <TabsTrigger value="commission" className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4" />
-            Configuração de Repasse
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center">
+          <TabsList className="grid w-full max-w-2xl grid-cols-2 h-14 p-1 bg-card border border-border shadow-elegant rounded-xl">
+            <TabsTrigger 
+              value="services" 
+              className="flex items-center gap-3 text-base font-semibold py-3 px-6 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-elegant data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant hover:bg-accent/50 hover:text-primary"
+            >
+              <Settings className="w-5 h-5" />
+              Gestão de Serviços
+            </TabsTrigger>
+            <TabsTrigger 
+              value="commission" 
+              className="flex items-center gap-3 text-base font-semibold py-3 px-6 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-elegant data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant hover:bg-accent/50 hover:text-primary"
+            >
+              <DollarSign className="w-5 h-5" />
+              Configuração de Repasse
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="services">
           <ServiceManagement />
