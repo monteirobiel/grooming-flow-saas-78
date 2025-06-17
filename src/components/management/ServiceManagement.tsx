@@ -19,12 +19,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export const ServiceManagement = () => {
   const { services, addService, updateService, deleteService } = useServices();
   const [newService, setNewService] = useState({ nome: "", preco: 0 });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [serviceToDelete, setServiceToDelete] = useState<{ id: number; name: string } | null>(null);
+  const [serviceToEdit, setServiceToEdit] = useState<{ id: number; nome: string; preco: number } | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const handleAddService = () => {
     if (!newService.nome.trim() || newService.preco <= 0) {
@@ -78,8 +89,52 @@ export const ServiceManagement = () => {
   };
 
   const handleEditService = (service: any) => {
-    setNewService({ nome: service.nome, preco: service.preco });
-    setEditingId(service.id);
+    setServiceToEdit({ id: service.id, nome: service.nome, preco: service.preco });
+    setEditDialogOpen(true);
+  };
+
+  const confirmEditService = () => {
+    if (serviceToEdit) {
+      if (!serviceToEdit.nome.trim() || serviceToEdit.preco <= 0) {
+        toast({
+          title: "Erro",
+          description: "Preencha o nome e o preço do serviço corretamente",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Verificar se já existe um serviço com o mesmo nome (exceto o próprio)
+      const serviceExists = services.some(s => 
+        s.nome.toLowerCase() === serviceToEdit.nome.toLowerCase() && 
+        s.id !== serviceToEdit.id
+      );
+
+      if (serviceExists) {
+        toast({
+          title: "Erro",
+          description: "Já existe um serviço com este nome",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      try {
+        updateService(serviceToEdit.id, { nome: serviceToEdit.nome.trim(), preco: serviceToEdit.preco });
+        toast({
+          title: "Sucesso!",
+          description: "Serviço atualizado com sucesso!"
+        });
+        setEditDialogOpen(false);
+        setServiceToEdit(null);
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar o serviço",
+          variant: "destructive"
+        });
+      }
+    }
   };
 
   const confirmDeleteService = () => {
@@ -177,15 +232,62 @@ export const ServiceManagement = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => handleEditService(service)}
-                      className="flex items-center gap-1"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Editar
-                    </Button>
+                    <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => handleEditService(service)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Editar Serviço</DialogTitle>
+                          <DialogDescription>
+                            Faça as alterações necessárias no serviço selecionado.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="edit-service-name">Nome do Serviço</Label>
+                            <Input
+                              id="edit-service-name"
+                              value={serviceToEdit?.nome || ""}
+                              onChange={(e) => setServiceToEdit(prev => 
+                                prev ? { ...prev, nome: e.target.value } : null
+                              )}
+                              placeholder="Nome do serviço"
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="edit-service-price">Preço (R$)</Label>
+                            <Input
+                              id="edit-service-price"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={serviceToEdit?.preco || ""}
+                              onChange={(e) => setServiceToEdit(prev => 
+                                prev ? { ...prev, preco: parseFloat(e.target.value) || 0 } : null
+                              )}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                            Cancelar
+                          </Button>
+                          <Button onClick={confirmEditService}>
+                            Salvar Alterações
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
