@@ -193,23 +193,25 @@ export const ServiceManagement = () => {
       </Card>
 
       {/* Botão para visualizar serviços cadastrados */}
-      <Card className="card-modern">
+      <Card className="card-modern border-primary/20 bg-gradient-to-br from-card to-accent">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>Serviços Cadastrados</span>
-            <Badge variant="secondary">{services.length} serviços</Badge>
+            <span className="text-gradient">Serviços Cadastrados</span>
+            <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 font-bold text-lg px-3 py-1">
+              {services.length} serviços
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-6">
+          <div className="text-center py-8">
             <Dialog open={servicesListOpen} onOpenChange={setServicesListOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  variant="outline"
-                  className="hover:bg-primary/10"
+                  size="lg"
+                  className="btn-primary min-w-[280px] h-14 text-lg font-bold shadow-elegant-lg hover:shadow-elegant transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                   disabled={services.length === 0}
                 >
-                  <List className="w-4 h-4 mr-2" />
+                  <List className="w-6 h-6 mr-3" />
                   Visualizar Serviços Cadastrados
                 </Button>
               </DialogTrigger>
@@ -306,13 +308,13 @@ export const ServiceManagement = () => {
             </Dialog>
             
             {services.length === 0 && (
-              <div className="mt-4">
-                <Plus className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
+              <div className="mt-6 p-6 bg-muted/50 rounded-lg border border-dashed border-border">
+                <Plus className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-muted-foreground mb-2 font-medium text-lg">
                   Nenhum serviço cadastrado ainda
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Adicione novos serviços usando o formulário acima
+                  Adicione novos serviços usando o formulário acima para começar
                 </p>
               </div>
             )}
