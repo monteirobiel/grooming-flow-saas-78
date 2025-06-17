@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,15 +117,12 @@ const Appointments = () => {
     });
   };
 
-  // Ordenar agendamentos: novos primeiro (por ID decrescente), depois por data e horário
   const filteredAgendamentos = applyFilters(appointments).sort((a, b) => {
-    // Primeiro por ID (mais recente primeiro)
     return b.id - a.id;
   });
 
   const activeFiltersCount = Object.keys(filters).filter(key => filters[key] && filters[key] !== '').length;
 
-  // Calcular estatísticas baseadas apenas em agendamentos concluídos
   const getTabStats = () => {
     const today = new Date().toISOString().split('T')[0];
     
@@ -136,7 +132,7 @@ const Appointments = () => {
       );
       return {
         total: proximos.length,
-        faturamento: 0, // Não contabilizar faturamento estimado
+        faturamento: 0,
         pendentes: proximos.filter(ag => ag.status === 'pendente').length
       };
     } else if (activeTab === "finalizados") {
@@ -358,94 +354,119 @@ const Appointments = () => {
         </CardContent>
       </Card>
 
-      {/* Abas de Filtro */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="todos">Todos</TabsTrigger>
-          <TabsTrigger value="proximos">Próximos</TabsTrigger>
-          <TabsTrigger value="finalizados">Finalizados</TabsTrigger>
-        </TabsList>
+      {/* Abas Elegantes - Aplicando o mesmo design da gestão */}
+      <Card className="card-elegant">
+        <CardContent className="p-8">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-elegant opacity-5 rounded-2xl"></div>
+              <TabsList className="relative grid w-full grid-cols-3 gap-4 p-4 bg-gradient-to-br from-card/80 to-accent/30 border border-primary/20 rounded-2xl shadow-elegant backdrop-blur-sm">
+                <TabsTrigger 
+                  value="todos" 
+                  className="relative flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-base font-semibold transition-all duration-300 data-[state=active]:bg-gradient-elegant data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant-lg data-[state=active]:scale-105 hover:scale-[1.02] hover:bg-accent/50 border border-transparent data-[state=active]:border-primary/30"
+                >
+                  <Calendar className="w-6 h-6" />
+                  <span>Todos</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="proximos" 
+                  className="relative flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-base font-semibold transition-all duration-300 data-[state=active]:bg-gradient-elegant data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant-lg data-[state=active]:scale-105 hover:scale-[1.02] hover:bg-accent/50 border border-transparent data-[state=active]:border-primary/30"
+                >
+                  <Clock className="w-6 h-6" />
+                  <span>Próximos</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="finalizados" 
+                  className="relative flex items-center justify-center gap-3 px-8 py-4 rounded-xl text-base font-semibold transition-all duration-300 data-[state=active]:bg-gradient-elegant data-[state=active]:text-primary-foreground data-[state=active]:shadow-elegant-lg data-[state=active]:scale-105 hover:scale-[1.02] hover:bg-accent/50 border border-transparent data-[state=active]:border-primary/30"
+                >
+                  <Check className="w-6 h-6" />
+                  <span>Finalizados</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-        {/* Resumo baseado na aba */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total</CardTitle>
-              <Calendar className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">agendamentos</p>
-            </CardContent>
-          </Card>
+            {/* Resumo baseado na aba */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+              <Card className="card-modern">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total</CardTitle>
+                  <Calendar className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                  <p className="text-xs text-muted-foreground">agendamentos</p>
+                </CardContent>
+              </Card>
 
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
-              <Clock className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-success">
-                R$ {stats.faturamento.toFixed(2)}
+              <Card className="card-modern">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Faturamento</CardTitle>
+                  <Clock className="h-4 w-4 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-success">
+                    R$ {stats.faturamento.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {activeTab === "finalizados" ? "realizado" : "estimado"}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="card-modern">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                  <Clock className="h-4 w-4 text-warning" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-warning">
+                    {stats.pendentes}
+                  </div>
+                  <p className="text-xs text-muted-foreground">confirmações</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <TabsContent value="todos" className="space-y-4 mt-6">
+              <div className="space-y-4">
+                {filteredAgendamentos.map(renderAppointmentCard)}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {activeTab === "finalizados" ? "realizado" : "estimado"}
-              </p>
-            </CardContent>
-          </Card>
+            </TabsContent>
 
-          <Card className="card-modern">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
-              <Clock className="h-4 w-4 text-warning" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-warning">
-                {stats.pendentes}
+            <TabsContent value="proximos" className="space-y-4 mt-6">
+              <div className="space-y-4">
+                {filteredAgendamentos.map(renderAppointmentCard)}
               </div>
-              <p className="text-xs text-muted-foreground">confirmações</p>
-            </CardContent>
-          </Card>
-        </div>
+            </TabsContent>
 
-        <TabsContent value="todos" className="space-y-4 mt-6">
-          <div className="space-y-4">
-            {filteredAgendamentos.map(renderAppointmentCard)}
-          </div>
-        </TabsContent>
+            <TabsContent value="finalizados" className="space-y-4 mt-6">
+              <div className="space-y-4">
+                {filteredAgendamentos.map(renderAppointmentCard)}
+              </div>
+            </TabsContent>
 
-        <TabsContent value="proximos" className="space-y-4 mt-6">
-          <div className="space-y-4">
-            {filteredAgendamentos.map(renderAppointmentCard)}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="finalizados" className="space-y-4 mt-6">
-          <div className="space-y-4">
-            {filteredAgendamentos.map(renderAppointmentCard)}
-          </div>
-        </TabsContent>
-
-        {/* Mensagem quando não há agendamentos */}
-        {filteredAgendamentos.length === 0 && (
-          <Card className="card-elegant mt-6">
-            <CardContent className="pt-6 text-center">
-              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-semibold mb-2">Nenhum agendamento encontrado</h3>
-              <p className="text-muted-foreground mb-4">
-                Não há agendamentos para os filtros aplicados.
-              </p>
-              <Button 
-                className="btn-primary"
-                onClick={() => setShowAppointmentForm(true)}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Agendamento
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </Tabs>
+            {/* Mensagem quando não há agendamentos */}
+            {filteredAgendamentos.length === 0 && (
+              <Card className="card-elegant mt-6">
+                <CardContent className="pt-6 text-center">
+                  <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2">Nenhum agendamento encontrado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Não há agendamentos para os filtros aplicados.
+                  </p>
+                  <Button 
+                    className="btn-primary"
+                    onClick={() => setShowAppointmentForm(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeiro Agendamento
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Modals */}
       <AppointmentForm
