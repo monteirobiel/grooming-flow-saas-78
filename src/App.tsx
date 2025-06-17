@@ -14,58 +14,61 @@ import Barbers from "./pages/Barbers";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={
-              <SidebarProvider>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </SidebarProvider>
-            } />
-            <Route path="/agendamentos" element={
-              <SidebarProvider>
-                <AppLayout>
-                  <Appointments />
-                </AppLayout>
-              </SidebarProvider>
-            } />
-            <Route path="/produtos" element={
-              <SidebarProvider>
-                <AppLayout>
-                  <Products />
-                </AppLayout>
-              </SidebarProvider>
-            } />
-            <Route path="/barbeiros" element={
-              <SidebarProvider>
-                <AppLayout>
-                  <Barbers />
-                </AppLayout>
-              </SidebarProvider>
-            } />
-            <Route path="/configuracoes" element={
-              <SidebarProvider>
-                <AppLayout>
-                  <Settings />
-                </AppLayout>
-              </SidebarProvider>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={
+                <SidebarProvider>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </SidebarProvider>
+              } />
+              <Route path="/agendamentos" element={
+                <SidebarProvider>
+                  <AppLayout>
+                    <Appointments />
+                  </AppLayout>
+                </SidebarProvider>
+              } />
+              <Route path="/produtos" element={
+                <SidebarProvider>
+                  <AppLayout>
+                    <Products />
+                  </AppLayout>
+                </SidebarProvider>
+              } />
+              <Route path="/barbeiros" element={
+                <SidebarProvider>
+                  <AppLayout>
+                    <Barbers />
+                  </AppLayout>
+                </SidebarProvider>
+              } />
+              <Route path="/configuracoes" element={
+                <SidebarProvider>
+                  <AppLayout>
+                    <Settings />
+                  </AppLayout>
+                </SidebarProvider>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
